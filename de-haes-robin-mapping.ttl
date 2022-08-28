@@ -1,0 +1,1233 @@
+@prefix rr: <http://www.w3.org/ns/r2rml#>.
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
+@prefix owl: <http://www.w3.org/2002/07/owl#>
+@prefix belonto: <http://www.semanticweb.org/belonto#>.
+
+# ADDRESS MAPPING
+<#Addresses>
+    a rr:TriplesMap;
+
+    # We split up street in street_name and street_number by assuming the street is the last part in the street field
+    # and both are separated by a space character (' ').
+    # The original field street is also selected for use in a joinCondition with Airport later on.
+    rr:logicalTable [rr:sqlQuery """
+      SELECT postal_code, city_name, country, continent, street,
+             substring(street from 0 for (length(street) - position(' ' in reverse(street)) + 1)) as street_name,
+             right(street, position(' ' in reverse(street))-1) as street_number
+	  FROM address;"""
+    ];
+
+    # Create a new Address for each entry in our address table, 
+    # with primary key consisting of street (street_name, street_number), postal_code and country
+    rr:subjectMap [
+        rr:template "http://www.semanticweb.org/belonto/address#{street_name}_{street_number}_{postal_code}_{country}" ;
+        rr:class belonto:Address ;
+    ];
+
+    # Data predicates mapping
+     rr:predicateObjectMap [
+        rr:predicate belonto:hasStreetName ;
+        rr:objectMap [ 
+            rr:column "street_name" ;
+            rr:datatype xsd:string ;
+        ];
+    ];
+    # street_number has Datatype xsd:string, because it can be alphanumeric (e.g., 33a)
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasStreetNumber ;
+        rr:objectMap [ 
+            rr:column "street_number" ;
+            rr:datatype xsd:string ; 
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasPostalCode ;
+        rr:objectMap [ 
+            rr:column "postal_code" ;
+            rr:datatype xsd:string ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:isLocatedInCountry ;
+        rr:objectMap [ 
+            rr:column "country" ;
+            rr:datatype xsd:string ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:isLocatedInContinent ;
+        rr:objectMap [ 
+            rr:column "continent" ;
+            rr:datatype xsd:string ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasCityName ;
+        rr:objectMap [ 
+            rr:column "city_name" ;
+            rr:language "en" ;
+        ];
+    ];
+.
+
+# AIRPLANE MAPPING
+<#Airplanes>
+    a rr:TriplesMap;
+
+    rr:logicalTable [ rr:tableName "airplane" ];
+
+    # Create a new Airplane for each entry in our airplane table, 
+    # with primary key consisting of tail_number
+    rr:subjectMap [
+        rr:template "http://www.semanticweb.org/belonto/airplane#{tail_number}" ;
+        rr:class belonto:Airplane ;
+    ];
+
+    # Data predicates mapping
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasTailNumber ;
+        rr:objectMap [ 
+            rr:column "tail_number" ;
+            rr:datatype xsd:string ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasAircraftType ;
+        rr:objectMap [ 
+            rr:column "aircraft_type" ;
+            rr:language "en" ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasFuelType ;
+        rr:objectMap [ 
+            rr:column "fuel_type" ;
+            rr:language "en" ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasFuelCapacity ;
+
+        rr:objectMap [ 
+            rr:column "fuel_capacity" ; 
+            rr:datatype owl:real ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasFuelEconomy ;
+        rr:objectMap [ 
+            rr:column "fuel_economy" ;
+            rr:datatype owl:real ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasCruisingSpeed ;
+        rr:objectMap [ 
+            rr:column "cruising_speed" ;
+            rr:datatype owl:real ;
+        ];
+    ];
+
+    # Object predicates mapping
+    rr:predicateObjectMap [
+        rr:predicate belonto:containsSeat;
+
+        rr:objectMap [ 
+            rr:parentTriplesMap <#Seats> ;
+            rr:joinCondition [
+                rr:child "tail_number" ;
+                rr:parent "airplane_tail_number"
+            ] ;
+        ]
+    ];
+.
+
+# AIRPORT MAPPING
+<#Airports>
+    a rr:TriplesMap;
+
+    rr:logicalTable [ rr:tableName "Airport" ];
+
+    # Create a new airport for each entry in our Airport table, 
+    # with primary key consisting of iata_code
+    rr:subjectMap [
+        rr:template "http://www.semanticweb.org/belonto/airport#{iata_code}" ;
+        rr:class belonto:Airport ;
+    ];
+
+    # Data predicates mapping
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasIATACode ;
+        rr:objectMap [ 
+            rr:column "iata_code" ;
+            rr:datatype xsd:string ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasAirportName ;
+        rr:objectMap [ 
+            rr:column "airport_name" ;
+            rr:language "en" ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasMCT ;
+        rr:objectMap [ 
+            rr:column "mct" ; 
+            rr:datatype xsd:nonNegativeInteger
+        ];
+    ];
+
+    # Object predicates mapping
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasAddress;
+
+        rr:objectMap [ 
+            rr:parentTriplesMap <#Addresses> ;
+            rr:joinCondition [
+                rr:child "address_street" ;
+                rr:parent "street" ;
+            ] ;
+            rr:joinCondition [
+                rr:child "address_postal_code" ;
+                rr:parent "postal_code" ;
+            ] ;
+            rr:joinCondition [
+                rr:child "address_country" ;
+                rr:parent "country" ;
+            ] ;
+        ]
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasArrival;
+
+        rr:objectMap [ 
+            rr:parentTriplesMap <#Flights> ;
+            rr:joinCondition [
+                rr:child "iata_code" ;
+                rr:parent "arrival_airport_iata"
+            ] ;
+        ]
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasDeparture;
+
+        rr:objectMap [ 
+            rr:parentTriplesMap <#Flights> ;
+            rr:joinCondition [
+                rr:child "iata_code" ;
+                rr:parent "departure_airport_iata"
+            ] ;
+        ]
+    ];
+.
+
+# AWARD TICKET MAPPING
+<#AwardTickets>
+    a rr:TriplesMap;
+
+    rr:logicalTable [ rr:tableName "award_ticket" ];
+
+    # Create a new AwardTicket for each entry in our award_ticket table, 
+    # with primary key consisting of loyalty_program_name and upgrade_type
+    rr:subjectMap [
+        rr:template "http://www.semanticweb.org/belonto/award_ticket#{loyalty_program_name}_{upgrade_type}" ;
+        rr:class belonto:AwardTicket ;
+    ];
+
+    # Data predicates mapping
+    rr:predicateObjectMap [
+        rr:predicate belonto:awardsUpgradeType ;
+        rr:objectMap [ 
+            rr:column "upgrade_type" ;
+            rr:language "en" ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:costsFFPoints ;
+        rr:objectMap [ 
+            rr:column "points" ;
+            rr:datatype xsd:string ;
+        ];
+    ];
+
+    # loyalty_program_name is not modeled as a DataProperty, but instead as an ObjectProperty from LoyaltyProgram to AwardTicket
+.
+
+
+# AWARDED POINTS MAPPING
+<#AwardedPoints>
+    a rr:TriplesMap;
+
+    rr:logicalTable [ rr:tableName "awarded_points" ];
+
+    # Create a new AwardedPoints for each entry in our awarded_points table, 
+    # with primary key consisting of booking_number and frequent_flyer_number
+    rr:subjectMap [
+        rr:template "http://www.semanticweb.org/belonto/awarded_points#booking_{booking_number}_FFN_{frequent_flyer_number}" ;
+        rr:class belonto:AwardedPoints ;
+    ];
+
+    # Data predicates mapping
+    rr:predicateObjectMap [
+        rr:predicate belonto:consistsOfFFPoints ;
+        rr:objectMap [ 
+            rr:column "points" ;
+            rr:datatype xsd:nonNegativeInteger ;
+        ];
+    ];
+
+    # booking_number and frequent_flyer_number are not modeled as a DataProperty, 
+    # but instead as an ObjectProperty from respectively FlightBooking to Awarded Points and AwardedPoints to FrequentFlyerCard
+
+    # Object predicates mapping
+    rr:predicateObjectMap [
+        rr:predicate belonto:isAddedToFFCard;
+
+        rr:objectMap [ 
+            rr:parentTriplesMap <#FrequentFlyerCards> ;
+            rr:joinCondition [
+                rr:child "frequent_flyer_number" ;
+                rr:parent "frequent_flyer_number"
+            ] ;
+        ]
+    ];
+.
+
+# FLIGHT MAPPING
+<#Flights>
+    a rr:TriplesMap;
+
+    # xsd:dateTime expects another dateTime format than the one provided by default for PostgreSQL
+    rr:logicalTable [rr:sqlQuery """
+      SELECT flight_designator, departure_date_time, arrival_date_time, distance, departure_airport_iata, arrival_airport_iata, airplane_tail_number,
+             CONCAT(departure_date_time::date, 'T', departure_date_time::time) AS formatted_departure_date_time, 
+             CONCAT(arrival_date_time::date, 'T', arrival_date_time::time) AS formatted_arrival_date_time
+	  FROM flight;"""
+    ];
+
+    # Create a new Flight for each entry in our flight table, 
+    # with primary key consisting of flight_designator
+    rr:subjectMap [
+        rr:template "http://www.semanticweb.org/belonto/flight#{flight_designator}_{departure_date_time}" ;
+        rr:class belonto:Flight ;
+    ];
+
+    # Data predicates mapping
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasFlightDesignator ;
+        rr:objectMap [ 
+            rr:column "flight_designator" ;
+            rr:datatype xsd:string ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasDepartureDateTime ;
+        rr:objectMap [ 
+            rr:column "formatted_departure_date_time" ;
+            rr:datatype xsd:dateTime ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasArrivalDateTime ;
+        rr:objectMap [ 
+            rr:column "formatted_arrival_date_time" ;
+            rr:datatype xsd:dateTime ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasFlightDistance ;
+        rr:objectMap [ 
+            rr:column "distance" ;
+            rr:datatype owl:real ;
+        ];
+    ];
+
+    # Object predicates mapping
+    rr:predicateObjectMap [
+        rr:predicate belonto:departsFrom;
+
+        rr:objectMap [ 
+            rr:parentTriplesMap <#Airports> ;
+            rr:joinCondition [
+                rr:child "departure_airport_iata" ;
+                rr:parent "iata_code" ;
+            ] ;
+        ]
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:arrivesAt;
+
+        rr:objectMap [ 
+            rr:parentTriplesMap <#Airports> ;
+            rr:joinCondition [
+                rr:child "arrival_airport_iata" ;
+                rr:parent "iata_code";
+            ] ;
+        ]
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:isFlownWithPlane;
+
+        rr:objectMap [ 
+            rr:parentTriplesMap <#Airplanes> ;
+            rr:joinCondition [
+                rr:child "airplane_tail_number" ;
+                rr:parent "tail_number" ;
+            ] ;
+        ]
+    ];
+.
+
+# FLIGHT BOOKING MAPPING
+<#FlightBookings>
+    a rr:TriplesMap;
+
+    # xsd:dateTime expects another dateTime format than the one provided by default for PostgreSQL
+    rr:logicalTable [rr:sqlQuery """
+      SELECT booking_number, booking_date_time, price_class, flights_price, passenger_id, payment_option_account_number, return_booking_number, insurance_product_name, insurance_company_name, award_ticket_loyalty_program_name, award_ticket_upgrade_type,
+             CONCAT(booking_date_time::date, 'T', booking_date_time::time) AS formatted_booking_date_time
+	  FROM booking;"""
+    ];
+
+    # Create a new FlightBooking for each entry in our booking table, 
+    # with primary key consisting of booking_number
+    rr:subjectMap [
+        rr:template "http://www.semanticweb.org/belonto/flight_booking#{booking_number}" ;
+        rr:class belonto:FlightBooking ;
+    ];
+
+    # Data predicates mapping
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasReservationID ;
+        rr:objectMap [ 
+            rr:column "booking_number" ;
+            rr:datatype xsd:string ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:isReservedOn ;
+        rr:objectMap [ 
+            rr:column "formatted_booking_date_time" ;
+            rr:datatype xsd:dateTime ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasBookingClass ;
+        rr:objectMap [ 
+            rr:column "price_class" ;
+            rr:language "en" ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasFlightsPrice ;
+        rr:objectMap [ 
+            rr:column "flights_price" ;
+            rr:datatype owl:real ;
+        ];
+    ];
+
+    # passenger_id, payment_option_account_number, return_booking_number, insurance_product_name, insurance_company_name, 
+    # award_ticket_loyalty_program_name and award_ticket_upgrade_type are not modeled as a DataProperty, 
+    # but instead as an ObjectProperty from respectively FlightBooking to Passenger, FlightBooking to PaymentOption, 
+    # FlightBooking to FlightBooking, FlightBooking to InsuranceProduct and FlightBooking to AwardTicket
+
+    # Object predicates mapping
+    rr:predicateObjectMap [
+        rr:predicate belonto:earnsFFPoints;
+
+        rr:objectMap [ 
+            rr:parentTriplesMap <#AwardedPoints> ;
+            rr:joinCondition [
+                rr:child "booking_number" ;
+                rr:parent "booking_number"
+            ] ;
+        ]
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:containsSeatReservation;
+
+        rr:objectMap [ 
+            rr:parentTriplesMap <#SeatReservations> ;
+            rr:joinCondition [
+                rr:child "booking_number" ;
+                rr:parent "booking_number"
+            ] ;
+        ]
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:containsLuggageReservation;
+
+        rr:objectMap [ 
+            rr:parentTriplesMap <#LuggageReservations> ;
+            rr:joinCondition [
+                rr:child "booking_number" ;
+                rr:parent "booking_number"
+            ] ;
+        ]
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:isBookedBy;
+
+        rr:objectMap [ 
+            rr:parentTriplesMap <#Passengers> ;
+            rr:joinCondition [
+                rr:child "passenger_id" ;
+                rr:parent "passenger_id"
+            ] ;
+        ]
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:isPaidWith;
+
+        rr:objectMap [ 
+            rr:parentTriplesMap <#PaymentOptions> ;
+            rr:joinCondition [
+                rr:child "payment_option_account_number" ;
+                rr:parent "account_number"
+            ] ;
+        ]
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasReturnBooking;
+
+        rr:objectMap [ 
+            rr:parentTriplesMap <#FlightBookings> ;
+            rr:joinCondition [
+                rr:child "return_booking_number" ;
+                rr:parent "booking_number"
+            ] ;
+        ]
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:isInsuredBy;
+
+        rr:objectMap [ 
+            rr:parentTriplesMap <#InsuranceProducts> ;
+            rr:joinCondition [
+                rr:child "insurance_product_name" ;
+                rr:parent "product_name"
+            ] ;
+            rr:joinCondition [
+                rr:child "insurance_company_name" ;
+                rr:parent "company_name"
+            ] ;
+        ]
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:usedAwardFrom;
+
+        rr:objectMap [ 
+            rr:parentTriplesMap <#AwardTickets> ;
+            rr:joinCondition [
+                rr:child "award_ticket_loyalty_program_name" ;
+                rr:parent "loyalty_program_name"
+            ] ;
+            rr:joinCondition [
+                rr:child "award_ticket_upgrade_type" ;
+                rr:parent "upgrade_type"
+            ] ;
+        ]
+    ];
+.
+
+# PASSENGER MAPPING
+<#Passengers>
+    a rr:TriplesMap;
+
+    # OWL does not support a date format, so we convert it to an xsd:dateTime format
+    rr:logicalTable [rr:sqlQuery """
+      SELECT passenger_id, first_name, last_name, email, telephone_number, date_of_birth,
+             to_char(date_of_birth, 'yyyy-mm-ddT00:00:00') AS formatted_date_of_birth
+	  FROM passenger;"""
+    ];
+
+    # Create a new Passenger for each entry in our passenger table, 
+    # with primary key consisting of passenger_id
+    rr:subjectMap [
+        rr:template "http://www.semanticweb.org/belonto/passenger#{passenger_id}" ;
+        rr:class belonto:Passenger ;
+    ];
+
+    # Data predicates mapping
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasPassengerID ;
+        rr:objectMap [ 
+            rr:column "passenger_id" ;
+            rr:datatype xsd:string ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasFirstName ;
+        rr:objectMap [ 
+            rr:column "first_name" ;
+            rr:datatype xsd:string ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasLastName ;
+        rr:objectMap [ 
+            rr:column "last_name" ;
+            rr:datatype xsd:string ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasEmail ;
+        rr:objectMap [ 
+            rr:column "email" ;
+            rr:datatype xsd:string ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasPhoneNumber ;
+        rr:objectMap [ 
+            rr:column "telephone_number" ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasBirthDate ;
+        rr:objectMap [ 
+            rr:column "formatted_date_of_birth" ;
+            rr:datatype xsd:dateTime ;
+        ];
+    ];
+
+    # Object predicates mapping
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasFrequentFlyerCard;
+
+        rr:objectMap [ 
+            rr:parentTriplesMap <#FrequentFlyerCards> ;
+            rr:joinCondition [
+                rr:child "passenger_id" ;
+                rr:parent "passenger_id"
+            ] ;
+        ]
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:getsSeatVia;
+
+        rr:objectMap [ 
+            rr:parentTriplesMap <#SeatReservations> ;
+            rr:joinCondition [
+                rr:child "passenger_id" ;
+                rr:parent "passenger_id"
+            ] ;
+        ]
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasLuggageReservation;
+
+        rr:objectMap [ 
+            rr:parentTriplesMap <#LuggageReservations> ;
+            rr:joinCondition [
+                rr:child "passenger_id" ;
+                rr:parent "passenger_id"
+            ] ;
+        ]
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:madeFlightBooking;
+
+        rr:objectMap [ 
+            rr:parentTriplesMap <#FlightBookings> ;
+            rr:joinCondition [
+                rr:child "passenger_id" ;
+                rr:parent "passenger_id"
+            ] ;
+        ]
+    ];
+.
+
+# FREQUENT FLYER CARD MAPPING
+<#FrequentFlyerCards>
+    a rr:TriplesMap;
+
+    rr:logicalTable [ rr:tableName "frequent_flyer_card" ];
+
+    # Create a new FrequentFlyerCard for each entry in our frequent_flyer_card table, 
+    # with primary key consisting of frequent_flyer_number
+    rr:subjectMap [
+        rr:template "http://www.semanticweb.org/belonto/frequent_flyer_card#{frequent_flyer_number}" ;
+        rr:class belonto:LoyaltyProgram ;
+    ];
+
+    # Data predicates mapping
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasFrequentFlyerNumber ;
+        rr:objectMap [ 
+            rr:column "frequent_flyer_number" ;
+            rr:datatype xsd:string ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasAccumulatedFFPoints ;
+        rr:objectMap [ 
+            rr:column "points" ;
+            rr:datatype xsd:nonNegativeInteger ;
+        ];
+    ];
+
+    # Object predicates mapping
+    rr:predicateObjectMap [
+        rr:predicate belonto:allowsParticipationInLoyaltyProgram;
+
+        rr:objectMap [ 
+            rr:parentTriplesMap <#LoyaltyPrograms> ;
+            rr:joinCondition [
+                rr:child "loyalty_program_name" ;
+                rr:parent "program_name"
+            ] ;
+        ]
+    ];
+.
+
+# INSURANCE PRODUCTS MAPPING
+<#InsuranceProducts>
+    a rr:TriplesMap;
+
+    rr:logicalTable [ rr:tableName "insurance" ];
+
+    # Create a new InsuranceProduct for each entry in our insurance table, 
+    # with primary key consisting of company_name and product_name
+    rr:subjectMap [
+        rr:template "http://www.semanticweb.org/belonto/insurance_product#{company_name}_{product_name}" ;
+        rr:class belonto:InsuranceProduct ;
+    ];
+
+    # Data predicates mapping
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasInsuranceName ;
+        rr:objectMap [ 
+            rr:column "product_name" ;
+            rr:language "en" ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasInsurer ;
+        rr:objectMap [ 
+            rr:column "company_name" ;
+            rr:language "en" ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasInsuranceType ;
+        rr:objectMap [ 
+            rr:column "insurance_type" ;
+            rr:language "en" ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasInsurancePremium ;
+        rr:objectMap [ 
+            rr:column "price" ;
+            rr:datatype owl:real ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:isDescribedInIPID ;
+        rr:objectMap [ 
+            rr:column "ipid_url" ;
+            rr:datatype xsd:string ;
+        ];
+    ];
+.
+
+# LOYALTY PROGRAM MAPPING
+<#LoyaltyPrograms>
+    a rr:TriplesMap;
+
+    rr:logicalTable [ rr:tableName "loyalty_program" ];
+
+    # Create a new LoyaltyProgram for each entry in our loyalty_program table, 
+    # with primary key consisting of program_name
+    rr:subjectMap [
+        rr:template "http://www.semanticweb.org/belonto/loyalty_program#{program_name}" ;
+        rr:class belonto:LoyaltyProgram ;
+    ];
+
+    # Data predicates mapping
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasLoyaltyProgramName ;
+        rr:objectMap [ 
+            rr:column "program_name" ;
+            rr:language "en" ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasLoyaltyProgramOrganizer ;
+        rr:objectMap [ 
+            rr:column "company_name" ;
+            rr:language "en" ;
+        ];
+    ];
+
+    # Object predicates mapping
+    rr:predicateObjectMap [
+        rr:predicate belonto:offersAwardTicket;
+
+        rr:objectMap [ 
+            rr:parentTriplesMap <#AwardTickets> ;
+            rr:joinCondition [
+                rr:child "program_name" ;
+                rr:parent "loyalty_program_name"
+            ] ;
+        ]
+    ];
+.
+
+# LUGGAGE SERVICE MAPPING
+<#LuggageServices>
+    a rr:TriplesMap;
+
+    rr:logicalTable [ rr:tableName "luggage_service" ];
+
+    # Create a new LuggageService for each entry in our luggage_service table, 
+    # with primary key consisting of luggage_type
+    rr:subjectMap [
+        rr:template "http://www.semanticweb.org/belonto/luggage_service#{luggage_type}" ;
+        rr:class belonto:LuggageService ;
+    ];
+
+    # Data predicates mapping
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasLuggageType ;
+        rr:objectMap [ 
+            rr:column "luggage_type" ;
+            rr:language "en" ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasPricePerBag ;
+        rr:objectMap [ 
+            rr:column "price" ;
+            rr:datatype owl:real ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:allowsMaxWeight ;
+        rr:objectMap [ 
+            rr:column "max_weight" ;
+            rr:datatype owl:real ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:allowsMaxHeight ;
+        rr:objectMap [ 
+            rr:column "max_height" ;
+            rr:datatype owl:real ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:allowsMaxLength ;
+        rr:objectMap [ 
+            rr:column "max_length" ;
+            rr:datatype owl:real ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:allowsMaxWidth ;
+        rr:objectMap [ 
+            rr:column "max_width" ;
+            rr:datatype owl:real ;
+        ];
+    ];
+.
+
+# LUGGAGE RESERVATION MAPPING
+<#LuggageReservations>
+    a rr:TriplesMap;
+
+    # xsd:dateTime expects another dateTime format than the one provided by default for PostgreSQL
+    rr:logicalTable [rr:sqlQuery """
+      SELECT reservation_id, creation_date_time, number_of_bags, luggage_service_type, passenger_id, booking_number,
+	         CONCAT(creation_date_time::date, 'T', creation_date_time::time) AS formatted_creation_date_time
+      FROM luggage_reservation;"""
+    ];
+
+    # Create a new LuggageReservation for each entry in our luggage_reservation table, 
+    # with primary key consisting of reservation_id
+    rr:subjectMap [
+        rr:template "http://www.semanticweb.org/belonto/luggage_reservation#{reservation_id}" ;
+        rr:class belonto:LuggageService ;
+    ];
+
+    # Data predicates mapping
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasReservationID ;
+        rr:objectMap [ 
+            rr:column "reservation_id" ;
+            rr:datatype xsd:string ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:isReservedOn ;
+        rr:objectMap [ 
+            rr:column "formatted_creation_date_time" ;
+            rr:datatype xsd:dateTime ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:reservesNumberOfBags ;
+        rr:objectMap [ 
+            rr:column "number_of_bags" ;
+            rr:datatype xsd:nonNegativeInteger ;
+        ];
+    ];
+
+    # luggage_service_type, passenger_id and booking_number are not modeled as a DataProperty, 
+    # but instead as an ObjectProperty from respectively LuggageReservation to LuggageService,
+    # Passenger to LuggageReservation + LuggageReservation to Passenger and FlightBooking to LuggageReservation
+
+    # Object predicates mapping
+    rr:predicateObjectMap [
+        rr:predicate belonto:reservesLuggageService;
+
+        rr:objectMap [ 
+            rr:parentTriplesMap <#LuggageServices> ;
+            rr:joinCondition [
+                rr:child "luggage_service_type" ;
+                rr:parent "luggage_type"
+            ] ;
+        ]
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:reservesLuggageFor;
+
+        rr:objectMap [ 
+            rr:parentTriplesMap <#Passengers> ;
+            rr:joinCondition [
+                rr:child "passenger_id" ;
+                rr:parent "passenger_id"
+            ] ;
+        ]
+    ];
+.
+
+# MEAL SERVICE MAPPING
+<#MealServices>
+    a rr:TriplesMap;
+
+    rr:logicalTable [ rr:tableName "meal_service" ];
+
+    # Create a new MealService for each entry in our meal_service table, 
+    # with primary key consisting of meal_name
+    rr:subjectMap [
+        rr:template "http://www.semanticweb.org/belonto/meal_service#{meal_name}" ;
+        rr:class belonto:LuggageService ;
+    ];
+
+    # Data predicates mapping
+    rr:predicateObjectMap [
+        rr:predicate belonto:offersMeal ;
+        rr:objectMap [ 
+            rr:column "meal_name" ;
+            rr:language "en" ;
+        ];
+    ];
+    # Data predicates mapping
+    rr:predicateObjectMap [
+        rr:predicate belonto:offersMealType ;
+        rr:objectMap [ 
+            rr:column "meal_type" ;
+            rr:language "en" ;
+        ];
+    ];
+    # Data predicates mapping
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasMealDescription ;
+        rr:objectMap [ 
+            rr:column "description" ;
+            rr:language "en" ;
+        ];
+    ];
+    # Data predicates mapping
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasPricePerMeal ;
+        rr:objectMap [ 
+            rr:column "price" ;
+            rr:datatype owl:real ;
+        ];
+    ];
+.
+
+# PAYMENT OPTION MAPPING
+<#PaymentOptions>
+    a rr:TriplesMap;
+
+    rr:logicalTable [ rr:tableName "payment_option" ];
+
+    # Create a new PaymentOption for each entry in our payment_option table, 
+    # with primary key consisting of account_number
+    rr:subjectMap [
+        rr:template "http://www.semanticweb.org/belonto/payment_option#{account_number}" ;
+        rr:class belonto:LuggageService ;
+    ];
+
+    # Data predicates mapping
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasAccountNumber ;
+        rr:objectMap [ 
+            rr:column "account_number" ;
+            rr:datatype xsd:string ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasPaymentType ;
+        rr:objectMap [ 
+            rr:column "payment_type" ;
+            rr:language "en" ;
+        ];
+    ];
+.
+
+# SEAT MAPPING
+<#Seats>
+    a rr:TriplesMap;
+
+    rr:logicalTable [ rr:tableName "seat" ];
+
+    # Create a new Seat for each entry in our seat table, 
+    # with primary key consisting of airplane_tail_number and seat_number
+    rr:subjectMap [
+        rr:template "http://www.semanticweb.org/belonto/seat#{airplane_tail_number}_{seat_number}" ;
+        rr:class belonto:Seat ;
+    ];
+
+    # Data predicates mapping
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasSeatNumber ;
+        rr:objectMap [ 
+            rr:column "seat_number" ;
+            rr:datatype xsd:string ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasSeatClass ;
+        rr:objectMap [ 
+            rr:column "price_class" ;
+            rr:language "en" ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasSeatType ;
+        rr:objectMap [ 
+            rr:column "seat_type" ;
+            rr:language "en" ;
+        ];
+    ];
+
+    # airplane_tail_number is not modeled as a DataProperty, 
+    # but instead as an ObjectProperty from Airplane to Seat
+.
+
+# SEAT RESERVATION MAPPING
+<#SeatReservations>
+    a rr:TriplesMap;
+
+    # xsd:dateTime expects another dateTime format than the one provided by default for PostgreSQL
+    rr:logicalTable [rr:sqlQuery """
+      SELECT reservation_id, creation_date_time, price, seat_tail_number, seat_number, passenger_id, booking_number,
+	         CONCAT(creation_date_time::date, 'T', creation_date_time::time) AS formatted_creation_date_time
+	  FROM seat_reservation;"""
+    ];
+
+    # Create a new SeatReservation for each entry in our seat_reservation table, 
+    # with primary key consisting of reservation_id
+    rr:subjectMap [
+        rr:template "http://www.semanticweb.org/belonto/seat_reservation#{reservation_id}" ;
+        rr:class belonto:SeatReservation ;
+    ];
+
+    # Data predicates mapping
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasReservationID ;
+        rr:objectMap [ 
+            rr:column "reservation_id" ;
+            rr:datatype xsd:string ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:isReservedOn ;
+        rr:objectMap [ 
+            rr:column "formatted_creation_date_time" ;
+            rr:datatype xsd:dateTime ;
+        ];
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasSeatPrice ;
+        rr:objectMap [ 
+            rr:column "price" ;
+            rr:datatype owl:real ;
+        ];
+    ];
+
+    # seat_tail_number, seat_number, passenger_id and booking_number are not modeled as DataProperties, 
+    # but instead as ObjectProperty from respectively SeatReservation to Seat, 
+    # Passenger to SeatReservation + SeatReservation to Passenger and FlightBooking to SeatReservation
+
+    # Object predicates mapping
+    rr:predicateObjectMap [
+        rr:predicate belonto:reservesSeat;
+
+        rr:objectMap [ 
+            rr:parentTriplesMap <#Seats> ;
+            rr:joinCondition [
+                rr:child "seat_tail_number" ;
+                rr:parent "airplane_tail_number"
+            ] ;
+            rr:joinCondition [
+                rr:child "seat_number" ;
+                rr:parent "seat_number"
+            ] ;
+        ]
+    ];
+    rr:predicateObjectMap [
+        rr:predicate belonto:assignsSeatTo;
+
+        rr:objectMap [ 
+            rr:parentTriplesMap <#Passengers> ;
+            rr:joinCondition [
+                rr:child "passenger_id" ;
+                rr:parent "passenger_id"
+            ] ;
+        ]
+    ];
+.
+
+
+### We decided to handle many-to-many mappings in separate mappings for clarity
+
+# FLIGHT BOOKING - FLIGHT MAPPING
+<#FlightBookingContainsFlightMapping>
+    a rr:TriplesMap;
+
+    rr:logicalTable [ rr:tableName "booking_flight" ];
+
+    # We specify the URI that we will use as subject, but we do not specify an rr:class
+    # as it is already created
+    rr:subjectMap [ 
+        rr:template "http://www.semanticweb.org/belonto/flight_booking#{booking_number}"
+    ];
+
+    # Object predicates mapping
+    rr:predicateObjectMap [
+        rr:predicate belonto:containsFlight;
+
+        rr:objectMap [
+            rr:parentTriplesMap <#Flights> ;
+            rr:joinCondition [
+                rr:child "flight_designator" ;
+                rr:parent "flight_designator"
+            ] ;
+            rr:joinCondition [
+                rr:child "departure_date_time" ;
+                rr:parent "departure_date_time"
+            ] ;
+        ]
+    ]
+.
+
+# FLIGHT - FLIGHT BOOKING MAPPING
+<#FlightIsBookedWithFlightBookingMapping>
+    a rr:TriplesMap;
+
+    rr:logicalTable [ rr:tableName "booking_flight" ];
+
+    # We specify the URI that we will use as subject, but we do not specify an rr:class
+    # as it is already created
+    rr:subjectMap [ 
+        rr:template "http://www.semanticweb.org/belonto/flight#{flight_designator}_{departure_date_time}"
+    ];
+
+    # Object predicates mapping
+    rr:predicateObjectMap [
+        rr:predicate belonto:isBookedWith;
+
+        rr:objectMap [
+            rr:parentTriplesMap <#FlightBookings> ;
+            rr:joinCondition [
+                rr:child "booking_number" ;
+                rr:parent "booking_number" ;
+            ] ;
+        ]
+    ] 
+.
+
+# FLIGHT BOOKING - PASSENGER MAPPING
+<#FlightBookingIsBookedForPassengerMapping>
+    a rr:TriplesMap;
+
+    rr:logicalTable [ rr:tableName "booking_for_passenger" ];
+
+    # We specify the URI that we will use as subject, but we do not specify an rr:class
+    # as it is already created
+    rr:subjectMap [ 
+        rr:template "http://www.semanticweb.org/belonto/flight_booking#{booking_number}"
+    ];
+
+    # Object predicates mapping
+    rr:predicateObjectMap [
+        rr:predicate belonto:isBookedFor;
+
+        rr:objectMap [
+            rr:parentTriplesMap <#Passengers> ;
+            rr:joinCondition [
+                rr:child "passenger_id" ;
+                rr:parent "passenger_id"
+            ] ;
+        ]
+    ]
+.
+
+# PASSENGER - FLIGHT BOOKING MAPPING
+<#PassengerHasFlightBookingMapping>
+    a rr:TriplesMap;
+
+    rr:logicalTable [ rr:tableName "booking_for_passenger" ];
+
+    # We specify the URI that we will use as subject, but we do not specify an rr:class
+    # as it is already created
+    rr:subjectMap [ 
+        rr:template "http://www.semanticweb.org/belonto/passenger#{passenger_id}"
+    ];
+
+    # Object predicates mapping
+    rr:predicateObjectMap [
+        rr:predicate belonto:hasFlightBooking;
+
+        rr:objectMap [
+            rr:parentTriplesMap <#FlightBookings> ;
+            rr:joinCondition [
+                rr:child "booking_number" ;
+                rr:parent "booking_number"
+            ] ;
+        ]
+    ]
+.
+
+# FLIGHT - MEAL SERVICE MAPPING
+<#FlightOffersMealServiceMapping>
+    a rr:TriplesMap;
+
+    rr:logicalTable [ rr:tableName "flight_meal_service" ];
+
+    # We specify the URI that we will use as subject, but we do not specify an rr:class
+    # as it is already created
+    rr:subjectMap [ 
+        rr:template "http://www.semanticweb.org/belonto/flight#{flight_designator}_{flight_departure_date_time}"
+    ];
+
+    # Object predicates mapping
+    rr:predicateObjectMap [
+        rr:predicate belonto:offersMealService;
+
+        rr:objectMap [
+            rr:parentTriplesMap <#MealServices> ;
+            rr:joinCondition [
+                rr:child "meal_name" ;
+                rr:parent "meal_name"
+            ] ;
+        ]
+    ]
+.

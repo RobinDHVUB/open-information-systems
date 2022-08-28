@@ -1,0 +1,657 @@
+# For more information about the idea behind each query and its expected results, we refer you to de-haes-robin-queries.sql
+# The following SPARQL queries will give the same results as the SQL queries in the aforementioned file.
+
+# SPARQL 1: Flight Searches
+# -------------------------
+
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX belonto: <http://www.semanticweb.org/belonto#>
+
+SELECT 
+	?outFlightDescription
+	?outFlightDesignator
+	?outDepartureDateTime
+	?outArrivalDateTime
+	?outFlightDuration
+
+	?returnFlightDescription
+	?returnFlightDesignator
+	?returnDepartureDateTime
+	?returnArrivalDateTime
+	?returnFlightDuration
+WHERE {  
+  # Both the outward and return flight have common constraints, but using
+  # CONSTRUCT to first create a "view" that is then nested inside a SELECT
+  # query is currently not supported. Therefore, a lot of similar statements
+  # are made for both the outward and return flight.
+  # Later, both flights are connected with each other by additional
+  # constraints.
+  
+  # relevant flight information that we want to show
+  ?outFlight a belonto:Flight .
+  ?outFlight belonto:hasFlightDesignator ?outFlightDesignator .
+  ?outFlight belonto:hasDepartureDateTime ?outDepartureDateTime .
+  ?outFlight belonto:hasArrivalDateTime ?outArrivalDateTime .
+  
+  ?outFlight belonto:departsFrom ?outDepartureAirport .
+  ?outFlight belonto:arrivesAt ?outArrivalAirport .
+  ?outDepartureAirport belonto:hasIATACode ?outDepartureAirportIATA .
+  ?outArrivalAirport belonto:hasIATACode ?outArrivalAirportIATA . 
+  # formatted textual representation of the flight	
+  BIND(CONCAT(?outDepartureAirportIATA, " -> ", ?outArrivalAirportIATA) AS ?outFlightDescription ) .
+  
+  ?returnFlight a belonto:Flight .
+  ?returnFlight belonto:hasFlightDesignator ?returnFlightDesignator .
+  ?returnFlight belonto:hasDepartureDateTime ?returnDepartureDateTime .
+  ?returnFlight belonto:hasArrivalDateTime ?returnArrivalDateTime .
+  
+  ?returnFlight belonto:departsFrom ?returnDepartureAirport .
+  ?returnFlight belonto:arrivesAt ?returnArrivalAirport .
+  ?returnDepartureAirport belonto:hasIATACode ?returnDepartureAirportIATA .
+  ?returnArrivalAirport belonto:hasIATACode ?returnArrivalAirportIATA .
+  BIND(CONCAT(STR( ?returnDepartureAirportIATA ), " -> ", STR( ?returnArrivalAirportIATA )) AS ?returnFlightDescription ) .
+  
+  # xsd:duration is not supported in standard SPARQL, so for interval
+  # comparisons we translate dateTime to a timestamp (starting from the year 0)
+  BIND((((((((YEAR(?outDepartureDateTime) * 365 + MONTH(?outDepartureDateTime)) * 12) + DAY(?outDepartureDateTime)) * 24) + HOURS(?outDepartureDateTime)) * 60) + MINUTES(?outDepartureDateTime)) * 60 + SECONDS(?outDepartureDateTime)  AS ?outDepartureTS)
+  BIND((((((((YEAR(?outArrivalDateTime) * 365 + MONTH(?outArrivalDateTime)) * 12) + DAY(?outArrivalDateTime)) * 24) + HOURS(?outArrivalDateTime)) * 60) + MINUTES(?outArrivalDateTime)) * 60 + SECONDS(?outArrivalDateTime)  AS ?outArrivalTS)
+  
+    BIND((((((((YEAR(?returnDepartureDateTime) * 365 + MONTH(?returnDepartureDateTime)) * 12) + DAY(?returnDepartureDateTime)) * 24) + HOURS(?returnDepartureDateTime)) * 60) + MINUTES(?returnDepartureDateTime)) * 60 + SECONDS(?returnDepartureDateTime)  AS ?returnDepartureTS)
+  BIND((((((((YEAR(?returnArrivalDateTime) * 365 + MONTH(?returnArrivalDateTime)) * 12) + DAY(?returnArrivalDateTime)) * 24) + HOURS(?returnArrivalDateTime)) * 60) + MINUTES(?returnArrivalDateTime)) * 60 + SECONDS(?returnArrivalDateTime)  AS ?returnArrivalTS)
+  
+  # xsd:duration is not supported in standard SPARQL and neither is computing
+  # date differences, so instead we compute the difference between the
+  # timestamps and convert it to a meaningful string representation.
+  BIND((?outArrivalTS - ?outDepartureTS) AS ?outDurationTS)
+  BIND(FLOOR(?outDurationTS/(24*3600)) AS ?outDays)
+  BIND(FLOOR((?outDurationTS - (?outDays * 24)) / 3600) AS ?outHours)
+  BIND(FLOOR((?outDurationTS - (((?outDays * 24) + ?outHours) * 3600)) / 60) AS ?outMins)
+  BIND((?outDurationTS - (((((?outDays * 24) + ?outHours) * 60) + ?outMins) * 60)) AS ?outSecs)
+  BIND(CONCAT(STR(?outDays), "D", STR(?outHours), "H", STR(?outMins), "M", STR(?outSecs), "S") AS ?outFlightDuration)
+
+  BIND((?returnArrivalTS - ?returnDepartureTS) AS ?returnDurationTS)
+  BIND(FLOOR(?returnDurationTS/(24*3600)) AS ?returnDays)
+  BIND(FLOOR((?returnDurationTS - (?returnDays * 24)) / 3600) AS ?returnHours)
+  BIND(FLOOR((?returnDurationTS - (((?returnDays * 24) + ?returnHours) * 3600)) / 60) AS ?returnMins)
+  BIND((?returnDurationTS - (((((?returnDays * 24) + ?returnHours) * 60) + ?returnMins) * 60)) AS ?returnSecs)
+  BIND(CONCAT(STR(?returnDays), "D", STR(?returnHours), "H", STR(?returnMins), "M", STR(?returnSecs), "S") AS ?returnFlightDuration)
+  
+  # the flights should offer a vegan meal
+  ?outFlight belonto:offersMealService ?outMealService .
+  ?outMealService belonto:offersMealType "vegan"@en .
+  
+  ?returnFlight belonto:offersMealService ?returnMealService .
+  ?returnMealService belonto:offersMealType "vegan"@en .
+  
+  # we compute the number of first class seats the planes of each flight have
+  # (there should be at least one such seat to be a valid flight)
+  { 
+    SELECT ?outFlight (COUNT(*) AS ?outAvailableSeats)
+    WHERE {
+      ?outFlight belonto:isFlownWithPlane ?outPlane .
+      ?outPlane belonto:containsSeat ?outSeat .
+      ?outSeat belonto:hasSeatClass "first"@en .
+    } GROUP BY ?outFlight
+  }
+  
+  { 
+    SELECT ?returnFlight (COUNT(*) AS ?returnAvailableSeats)
+    WHERE {
+      ?returnFlight belonto:isFlownWithPlane ?returnPlane .
+      ?returnPlane belonto:containsSeat ?returnSeat .
+      ?returnSeat belonto:hasSeatClass "first"@en .
+    } GROUP BY ?returnFlight
+  }
+  
+  # we compute the number of first class seats that are already booked on each
+  # flight because these are not available anymore
+  {  
+    SELECT ?outFlight (SUM(IF(BOUND(?outBooking), 1, 0)) AS ?outBookedSeats)
+    WHERE {
+      ?outFlight a belonto:Flight .
+      
+      # OPTIONAL since it is possible no seats have been booked so far
+      OPTIONAL {
+        ?outFlight belonto:isBookedWith ?outBooking .
+        ?outBooking belonto:hasBookingClass "first"@en .
+        ?outBooking belonto:isBookedFor ?outPassenger.
+      }
+    } GROUP BY ?outFlight
+  }
+
+  {  
+    SELECT ?returnFlight (SUM(IF(BOUND(?outBooking),1,0)) AS ?returnBookedSeats)
+    WHERE {
+      ?returnFlight a belonto:Flight .
+      
+      OPTIONAL {
+        ?returnFlight belonto:isBookedWith ?returnBooking .
+        ?returnBooking belonto:hasBookingClass "first"@en .
+        ?returnBooking belonto:isBookedFor ?returnPassenger.
+      }
+    } GROUP BY ?returnFlight
+  }
+    
+  # we compute the number of window seats that are still available on each
+  # flight, i.e., for which a seat reservation does not exist yet
+  {
+    SELECT ?outFlight (COUNT(*) AS ?outRemainingWindowSeats)
+    WHERE {
+      ?outFlight belonto:isFlownWithPlane ?outPlane .
+      ?outPlane belonto:containsSeat ?outSeat .
+      ?outSeat belonto:hasSeatClass "first"@en .
+      ?outSeat belonto:hasSeatType "window"@en .
+      
+      # check if the seat is already reserved
+      FILTER NOT EXISTS {
+        ?outFlight belonto:isBookedWith ?outBooking .
+        ?outBooking belonto:containsSeatReservation ?outSeatReservation .
+        ?outSeatReservation belonto:reserverSeat ?outSeat .
+      }
+    } GROUP BY ?outFlight
+  }
+  
+  {
+    SELECT ?returnFlight (COUNT(*) AS ?returnRemainingWindowSeats)
+    WHERE {
+      ?returnFlight belonto:isFlownWithPlane ?returnPlane .
+      ?returnPlane belonto:containsSeat ?returnSeat .
+      ?returnSeat belonto:hasSeatClass "first"@en .
+      ?returnSeat belonto:hasSeatType "window"@en .
+      
+      FILTER NOT EXISTS {
+        ?returnFlight belonto:isBookedWith ?returnBooking .
+        ?returnBooking belonto:containsSeatReservation ?returnSeatReservation .
+        ?returnSeatReservation belonto:reserverSeat ?returnSeat .
+      }
+    } GROUP BY ?returnFlight
+  }
+  
+  # we are looking for round-trip flights between BRU and JFK
+  FILTER(?outDepartureAirportIATA = "BRU" && ?outArrivalAirportIATA = "JFK")
+  FILTER(?returnDepartureAirport = ?outArrivalAirport && ?returnArrivalAirport = ?outDepartureAirport)
+  
+  # we want to travel in October 2022 (i.e., the 10th month of 2022)
+  FILTER(YEAR(?outDepartureDateTime) = YEAR(?outArrivalDateTime) && YEAR(?outDepartureDateTime) = 2022
+         && MONTH(?outDepartureDateTime) = MONTH(?outArrivalDateTime) && MONTH(?outDepartureDateTime) = 10)
+  
+  FILTER(YEAR(?returnDepartureDateTime) = YEAR(?returnArrivalDateTime) && YEAR(?returnDepartureDateTime) = 2022
+    	 && MONTH(?returnDepartureDateTime) = MONTH(?returnArrivalDateTime) && MONTH(?returnDepartureDateTime) = 10)
+  
+  # the maximum duration of each flight should be below 16 hours
+  FILTER((?outArrivalTS - ?outDepartureTS) < (16 * 3600))
+  FILTER((?returnArrivalTS - ?returnDepartureTS) < (16 * 3600))
+  
+  # the passenger wants to stay at the destination for at least 5 days
+  FILTER(?returnDepartureTS > (?outArrivalTS + (5 * 24 * 3600)))
+  
+  # there should be at least 1 first class seat still available on each flight
+  FILTER((?outAvailableSeats - ?outBookedSeats) > 0)
+  FILTER((?returnAvailableSeats - ?returnBookedSeats) > 0)
+    
+  # not all window seats should be reserved
+  FILTER(?outRemainingWindowSeats > 0)
+  FILTER(?returnRemainingWindowSeats > 0)
+} 
+ORDER BY ?outDepartureDateTime ?returnDepartureDateTime
+
+# SPARQL 2: Overbooking Mitigation
+# --------------------------------
+
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX belonto: <http://www.semanticweb.org/belonto#>
+
+SELECT 
+  ?passengerID 
+  ?email 
+  ("Miles & More"@en AS ?loyaltyProgramName)
+  ?points 
+  ?bookingDateTime
+WHERE {
+  ?passenger a belonto:Passenger .
+  ?passenger belonto:hasPassengerID ?passengerID .
+  ?passenger belonto:hasFlightBooking ?booking .
+  ?booking belonto:hasReservationID ?bookingNumber .
+  
+  # we are checking a specific flight
+  ?flight belonto:hasFlightDesignator "SN1510" .
+  ?flight belonto:hasDepartureDateTime ?departureDT .
+  ?booking belonto:containsFlight ?flight .
+  
+  # only the booker (i.e. main contact is required to provide an email address)
+  # so if the selected passenger has no direct contact information, return the
+  # main contact's information
+  ?booking belonto:isBookedBy ?booker .
+  ?booker belonto:hasEmail ?bookerEmail .
+  OPTIONAL 
+  {
+    ?passenger belonto:hasEmail ?passengerEmail .
+  }
+  BIND(IF(BOUND(?passengerEmail), ?passengerEmail, ?bookerEmail) AS ?email) .
+  
+  # economy is overbooked, so we are looking for passengers with such a booking
+  ?booking belonto:hasBookingClass "economy"@en .
+  
+  # we will check later whether the loyalty program they have a frequent flyer
+  # card from supports upgrades to first class (because business class is
+  # already fully booked as well)
+  ?passenger belonto:hasFrequentFlyerCard ?ffc .
+  ?ffc belonto:allowsParticipationInLoyaltyProgram ?loyaltyProgram .
+  ?loyaltyProgram belonto:hasLoyaltyProgramName ?loyaltyProgramName .
+  ?loyaltyProgram belonto:offersAwardTicket ?awardTicket .
+  ?awardTicket belonto:awardsUpgradeType "first class"@en.
+    
+  # the passenger with most points and earliest booking time gets priority
+  # (i.e., these values will be used for ordering)
+  ?ffc belonto:hasAccumulatedFFPoints ?points .
+  ?booking belonto:isReservedOn ?bookingDateTime .
+    
+  # we compute the age of the passenger to know whether he's a minor or an
+  # adult (with a minor being under 12 and an adult being at least 18)
+  ?passenger belonto:hasBirthDate ?birthDate .
+  # Age can be computed by computing the difference between the years and then
+  # subtracting one year if the passenger's birthday is in a later month or on
+  # a later day in the same month in the departure year 
+  BIND((YEAR(?departureDT) - YEAR(?birthDate)) - (IF((MONTH(?departureDT) < MONTH (?birthDate)) || ((MONTH(?departureDT) = MONTH(?birthDate)) && (DAY(?departureDT) < DAY(?birthDate))), 1, 0)) AS ?age )
+  
+  # we won't give an upgrade to an adult if it's the only adult accompanying a
+  # minor
+  {
+    SELECT ?booking ?departureDT
+    WHERE { 
+      ?ePassenger a belonto:Passenger . 
+      ?ePassenger belonto:hasFlightBooking ?booking .
+      ?ePassenger belonto:hasBirthDate ?eBirthDate .
+      
+      BIND("2022-08-20T11:30:00"^^xsd:dateTime AS ?departureDT)
+      BIND((YEAR(?departureDT) - YEAR(?eBirthDate)) - (IF((MONTH(?departureDT) < MONTH (?eBirthDate)) || ((MONTH(?departureDT) = MONTH(?eBirthDate)) && (DAY(?departureDT) < DAY(?eBirthDate))), 1, 0)) AS ?eAge )
+    } 
+    GROUP BY ?booking ?departureDT
+    # to be eligible you should not be accompanying a minor or there should be
+    # more than 1 adult accompanying the minor(s)
+    HAVING (SUM(if(?eAge >= 18, 1, 0)) > 1 || SUM(if(?eAge < 12, 1, 0)) = 0)
+  }
+  
+  # we won't give an upgrade to minors (because they have to be accompanied by
+  # their adult)
+  FILTER(?age >= 12)
+} 
+# the passengers with more points and earlier booking time get priority
+ORDER BY DESC(?points) ?bookingDateTime
+
+# SPARQL 3: Booking Price & Awarded Points
+# ----------------------------------------
+
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX belonto: <http://www.semanticweb.org/belonto#>
+
+# We will perform 2 subqueries that compute the price per passenger for
+# different parts of the bill for the outward and return flight, with parts of
+# the bill being insurance, luggage, flight cost, etc.
+# The results of these 2 subqueries will then be combined to compute the total
+# cost of the booking.
+SELECT 
+ ?bookingNumber
+ ?bookerID
+ # the total cost of the booking can be computed by summing up all the
+ # separate parts for all the passengers in the booking
+ (SUM(?insuranceCost) 
+  + SUM(?outFlightCost)
+  + SUM(?outLuggageCost)
+  + SUM(?outSeatCost) 
+  + SUM(?returnFlightCost)
+  + SUM(?returnLuggageCost)
+  + SUM(?returnSeatCost) AS ?totalPrice)
+  ?paymentType
+  ?loyaltyProgramName
+  ?points
+WHERE { 
+  ?booking a belonto:FlightBooking .
+  ?booking belonto:hasReservationID ?bookingNumber .
+  # we keep track of the actual booker, since it is the passenger that will be
+  # awarded the frequent flyer miles (in case of a group booking)
+  ?booking belonto:isBookedBy ?booker .
+  ?booker belonto:hasPassengerID ?bookerID .
+  # we will show how everything was paid for
+  ?booking belonto:isPaidWith ?paymentOption .
+  ?paymentOption belonto:hasPaymentType ?paymentType .
+  
+  # subquery for costs related to the outward flight of the booking, grouped
+  # per passenger
+  {
+    SELECT
+      ?passenger
+      ?booking
+      ?insuranceCost
+      # the total luggage cost for a passenger is the sum of the costs for
+      # each type of luggage
+      (SUM(?outBagsCost) AS ?outLuggageCost)
+      ?outFlightCost
+      ?outSeatCost
+    WHERE {
+      ?passenger a belonto:Passenger .
+      ?passenger belonto:hasFlightBooking ?booking .
+      
+      # the price for the actual flight itself
+      # (i.e. transportation of the passenger) is stored on the booking; 
+      # owl:real is not a supported datatype in standard SPARQL, so we convert
+      # it to xsd:float to perform arithmetic later
+      ?booking belonto:hasFlightsPrice ?outFlightsPrice .
+      BIND(xsd:float(xsd:string(?outFlightsPrice)) AS ?outFlightCost)
+      
+      # OPTIONAL is used since all the following parts are not required to be
+      # present in a booking
+	
+      # the group insurance is only charged to the booker (and only once for
+      # the whole round-trip);
+      # owl:real is not a supported datatype in standard SPARQL, so we convert
+      # it to xsd:float to perform arithmetic later and we use a conditional
+      # BIND statement instead of COALESCE since it allows for more 
+      # straightforward GROUP BY statements (grouping would otherwise have to
+      # be on ?insurancePrice instead of ?insuranceCost)
+      OPTIONAL 
+      {
+        ?booking belonto:isBookedBy ?passenger .
+        ?booking belonto:isInsuredBy ?insurance .
+        ?insurance belonto:hasInsurancePremium ?insurancePrice .
+      }
+      BIND(IF(BOUND(?insurancePrice), xsd:float(xsd:string(?insurancePrice)), "0.0"^^xsd:float) AS ?insuranceCost)
+      
+      # the price for bringing luggage can be computed by summing up (the
+      # number of bags we have of each type) times (the cost for that type of
+      # bag) ;
+      # we already compute the products used in the sum here while summing up
+      # happens in the SELECT statement
+      OPTIONAL
+      {
+        ?passenger belonto:hasLuggageReservation ?luggageReservation .
+        ?booking belonto:containsLuggageReservation ?luggageReservation .
+        ?luggageReservation belonto:reservesLuggageService ?luggageService .
+        ?luggageReservation belonto:reservesNumberOfBags ?outNumberOfBags .
+        ?luggageService belonto:hasPricePerBag ?outPricePerBag .
+      }
+      BIND(IF(BOUND(?outPricePerBag), xsd:float(xsd:string(?outPricePerBag)) * ?outNumberOfBags, "0.0"^^xsd:float) AS ?outBagsCost)
+      
+      # the price for reserving a seat is stored via a seat reservation
+      OPTIONAL 
+      {
+        ?passenger belonto:getsSeatVia ?outSeatReservation .
+        ?booking belonto:containsSeatReservation ?outSeatReservation .
+        ?outSeatReservation belonto:hasSeatPrice ?outSeatPrice .
+      }
+      BIND(IF(BOUND(?outSeatPrice), xsd:float(xsd:string(?outSeatPrice)), "0.0"^^xsd:float) AS ?outSeatCost)
+    } 
+    # except for luggage cost, all prices are unique and can therefore be
+    # safely included in the GROUP BY statement
+    GROUP BY ?passenger ?booking ?insuranceCost ?outFlightCost ?outSeatCost
+  } 
+  
+  # subquery for costs related to the return flight of the booking, grouped
+  # per passenger;
+  # same computations should occur (except insurance which is only paid once),
+  # but everything is optional as the return flight itself is optional as well
+  {
+    SELECT
+      ?passenger
+      ?booking 
+      ?returnFlightCost
+      (SUM(?returnBagsCost) AS ?returnLuggageCost)
+      ?returnSeatCost
+    WHERE {
+      ?passenger a belonto:Passenger .
+      ?passenger belonto:hasFlightBooking ?booking .
+      
+      # belonto:hasReturnBooking is included in every OPTIONAL statement
+      # because the next OPTIONAL statements would otherwise not be related to
+      # the original booking when there is no return booking as the first
+      # OPTIONAL statement would not create a binding for ?returnBooking
+      OPTIONAL 
+      {
+        ?booking belonto:hasReturnBooking ?returnBooking .
+        ?returnBooking belonto:hasFlightsPrice ?returnFlightsPrice .
+      }
+      BIND(IF(BOUND(?returnFlightsPrice), xsd:float(xsd:string(?returnFlightsPrice)), "0.0"^^xsd:float) AS ?returnFlightCost)
+            
+      OPTIONAL {
+        ?booking belonto:hasReturnBooking ?returnBooking .
+        ?passenger belonto:hasLuggageReservation ?returnLuggageReservation .
+        ?returnBooking belonto:containsLuggageReservation ?returnLuggageReservation .
+        ?returnLuggageReservation belonto:reservesLuggageService ?returnLuggageService .
+        ?returnLuggageReservation belonto:reservesNumberOfBags ?returnNumberOfBags .
+        ?returnLuggageService belonto:hasPricePerBag ?returnPricePerBag .
+      }
+      BIND(IF(BOUND(?returnPricePerBag), xsd:float(xsd:string(?returnPricePerBag)) * ?returnNumberOfBags, "0.0"^^xsd:float) AS ?returnBagsCost)
+      
+      OPTIONAL { 
+        ?booking belonto:hasReturnBooking ?returnBooking .
+        ?passenger belonto:getsSeatVia ?returnSeatReservation .
+        ?returnBooking belonto:containsSeatReservation ?returnSeatReservation .
+        ?returnSeatReservation belonto:hasSeatPrice ?returnSeatPrice .
+      }
+      BIND(IF(BOUND(?returnSeatPrice), xsd:float(xsd:string(?returnSeatPrice)), "0.0"^^xsd:float) AS ?returnSeatCost)
+    }
+    GROUP BY ?passenger ?booking ?returnFlightCost ?returnSeatCost
+  }
+  
+  # OPTIONAL is also used for retrieving the awarded points, since having an
+  # eligible frequent flyer card is not required
+  OPTIONAL {
+    ?booker belonto:hasFrequentFlyerCard ?frequentFlyerCard .
+    ?booking belonto:earnsFFPoints ?awardedPoints .
+	?awardedPoints belonto:consistsOfFFPoints ?points .
+    ?awardedPoints belonto:isAddedToFFCard ?frequentFlyerCard .
+    ?frequentFlyerCard belonto:allowsParticipationInLoyaltyProgram ?loyaltyProgram .
+    ?loyaltyProgram belonto:hasLoyaltyProgramName ?loyaltyProgramName .
+  }
+  
+  # all computations are made for a specific booking 
+  # (for clarity we limited the computation to one specific order, but a
+  # correct and complete overview per booking would be given otherwise) ;
+  # replace the filter below by
+  # FILTER NOT EXISTS { ?outBooking belonto:hasReturnBooking ?booking . }
+  # to get an overview for all bookings
+  FILTER(?bookingNumber = "B00000000017")
+} 
+# all these fields are unique and can therefore be safely included in the
+# GROUP BY statement
+GROUP BY ?bookingNumber ?bookerID ?paymentType ?loyaltyProgramName ?points
+
+# SPARQL 4: Cost Computations
+# ---------------------------
+
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX belonto: <http://www.semanticweb.org/belonto#>
+
+SELECT ?tailNumber ?aircraftType ?fuelCost
+WHERE {
+  # this subquery counts the number of booked seats per price class 
+  # (i.e., the minimum number of seats we need)
+  {
+    SELECT 
+      ?flight
+      (SUM(if(?bookingClass = "economy"@en, 1, 0)) AS ?minEconomy)
+      (SUM(if(?bookingClass = "business"@en, 1, 0)) AS ?minBusiness)
+      (SUM(if(?bookingClass = "first"@en, 1, 0)) AS ?minFirst)
+    WHERE {
+      ?booking a belonto:FlightBooking .
+      ?booking belonto:hasBookingClass ?bookingClass .
+      # one booking can be for multiple passengers
+      ?booking belonto:isBookedFor ?passenger .
+
+      # we are counting the seats for a specific (known) flight
+      ?booking belonto:containsFlight ?flight .
+      ?flight belonto:hasFlightDesignator "SN4508" .
+      ?flight belonto:hasDepartureDateTime "2022-10-01T13:15:00"^^xsd:dateTime .
+    }
+    GROUP BY ?flight
+  }
+  
+  # this subquery counts the number of seats per price class that are 
+  # available on an airplane
+  {
+    SELECT 
+      ?airplane
+      (SUM(if(?seatClass = "economy"@en, 1, 0)) AS ?planeEconomy)
+      (SUM(if(?seatClass = "business"@en, 1, 0)) AS ?planeBusiness)
+      (SUM(if(?seatClass = "first"@en, 1, 0)) AS ?planeFirst)
+    WHERE {
+      ?airplane a belonto:Airplane .
+      ?airplane belonto:containsSeat ?seat .
+      ?seat belonto:hasSeatClass ?seatClass .
+    }
+    GROUP BY ?airplane
+  } 
+  
+  # we want to display tail number and type in the results
+  ?airplane belonto:hasTailNumber ?tailNumber .
+  ?airplane belonto:hasAircraftType ?aircraftType .
+  
+  # we will use flight and airplane information to put some constraints on the
+  # eligibility of airplanes
+  ?flight belonto:hasFlightDistance ?flightDistance .
+  ?flight belonto:hasDepartureDateTime ?flightDeparture .
+  ?flight belonto:hasArrivalDateTime ?flightArrival .
+  ?airplane belonto:hasFuelCapacity ?fuelCapacity .
+  ?airplane belonto:hasFuelEconomy ?fuelEconomy .
+  ?airplane belonto:hasCruisingSpeed ?cruisingSpeed .
+  
+  # owl:real is not a supported datatype in standard SPARQL,
+  # so we convert it to xsd:float to perform arithmetic later
+  BIND(xsd:float(xsd:string(?flightDistance)) AS ?flightDistanceF)
+  BIND(xsd:float(xsd:string(?fuelCapacity)) AS ?fuelCapacityF)
+  BIND(xsd:float(xsd:string(?fuelEconomy)) AS ?fuelEconomyF)
+  BIND(xsd:float(xsd:string(?cruisingSpeed)) AS ?cruisingSpeedF)
+  
+  # xsd:duration is not supported in standard SPARQL, so for comparisons with
+  # the interval between flight departure and arrival we translate dateTime to
+  # a timestamp (starting from the year 0)
+  BIND((((((((YEAR(?flightDeparture) * 365 + MONTH(?flightDeparture)) * 12) + DAY(?flightDeparture)) * 24) + HOURS(?flightDeparture)) * 60) + MINUTES(?flightDeparture)) * 60 + SECONDS(?flightDeparture)  AS ?flightDepartureTS)
+  BIND((((((((YEAR(?flightArrival) * 365 + MONTH(?flightArrival)) * 12) + DAY(?flightArrival)) * 24) + HOURS(?flightArrival)) * 60) + MINUTES(?flightArrival)) * 60 + SECONDS(?flightArrival)  AS ?flightArrivalTS)
+  
+  # we use a different (arbitrarily chosen) price for a liter of kerosene and
+  # gasoline so we can use that price to compute the fuel cost of the plane
+  ?airplane belonto:hasFuelType ?fuelType .
+  BIND(IF(?fuelType = "kerosene"@en, (?flightDistanceF / ?fuelEconomyF) * 0.4, (?flightDistanceF / ?fuelEconomyF) * 1.4) AS ?fuelCost) .
+  
+  # the airplane should have enough economy, business and first class seats
+  # available to cover the existing bookings
+  FILTER((?planeEconomy > ?minEconomy) && (?planeBusiness > ?minBusiness) && (?planeFirst > ?minFirst))
+  # the airplane should have enough fuel to cover the required distance
+  FILTER(?fuelCapacityF > (?flightDistanceF / ?fuelEconomyF))
+  # the airplane should be able to travel fast enough so it won't arrive late
+  FILTER(((?flightDistanceF / ?cruisingSpeedF) * 3600) < (?flightArrivalTS - ?flightDepartureTS)) 
+}
+# we are currently mainly using fuel cost to make our final decision,
+# so we order on fuel cost
+ORDER BY ?fuelCost
+
+# SPARQL 5: Flight Overview
+# -------------------------
+
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX belonto: <http://www.semanticweb.org/belonto#>
+
+# Results will be obtained as the union of 2 queries.
+# The first query searches for all direct flights 
+# and the second query searches for flights with one layover.
+SELECT DISTINCT ?flightDescription ?flightType ?hasLayovers
+WHERE {
+  # direct flights
+  { 
+    ?flight a belonto:Flight .
+    
+    # get the origin and destination airport of the direct flight 
+    # (and their IATA codes)
+    ?flight belonto:departsFrom ?originAirport .
+    ?originAirport belonto:hasIATACode ?originCode .
+    ?flight belonto:arrivesAt ?destinationAirport .
+    ?destinationAirport belonto:hasIATACode ?destinationCode .
+
+    # formatted textual representation of the flight	
+    BIND(CONCAT(STR( ?originCode ), " -> ", STR( ?destinationCode )) AS ?flightDescription ) .
+    
+    # this query will find direct flights
+    BIND("false"^^xsd:boolean AS ?hasLayovers) .
+  }  
+  
+  UNION
+  
+  # flights with layovers
+  {
+    # flight1 is the flight to the layover destination
+    ?flight1 a belonto:Flight .
+    # flight2 is the flight from the layover stop to the final destination
+    ?flight2 a belonto:Flight .
+    
+    # get the origin, intermediate and destination airport 
+    # of the direct flight (and their IATA codes)
+    ?flight1 belonto:departsFrom ?originAirport .
+    ?originAirport belonto:hasIATACode ?originCode .
+    ?flight1 belonto:arrivesAt ?intermediateAirport .
+    ?flight2 belonto:departsFrom ?intermediateAirport .
+    ?intermediateAirport belonto:hasIATACode ?intermediateCode .
+    ?flight2 belonto:arrivesAt ?destinationAirport .
+    ?destinationAirport belonto:hasIATACode ?destinationCode .
+  
+    # get the arrival time, departure time and the layover airport's
+    # minimum connection time to ensure both flights can be connected safely
+    ?flight1 belonto:hasArrivalDateTime ?intermediateArrivalDateTime .
+    ?flight2 belonto:hasDepartureDateTime ?intermediateDepartureDateTime .
+    ?intermediateAirport belonto:hasMCT ?mct .
+    
+    # xsd:duration is not supported in standard SPARQL, so to compare with MCT
+    # later on we translate dateTime to a timestamp (starting from the year 0)
+    # to later compare the difference between departure and arrival with MCT
+    BIND((((((((YEAR(?intermediateArrivalDateTime) * 365 + MONTH(?intermediateArrivalDateTime)) * 12) + DAY(?intermediateArrivalDateTime)) * 24) + HOURS(?intermediateArrivalDateTime)) * 60) + MINUTES(?intermediateArrivalDateTime)) * 60 + SECONDS(?intermediateArrivalDateTime)  AS ?intermediateArrivalTS)
+    BIND((((((((YEAR(?intermediateDepartureDateTime) * 365 + MONTH(?intermediateDepartureDateTime)) * 12) + DAY(?intermediateDepartureDateTime)) * 24) + HOURS(?intermediateDepartureDateTime)) * 60) + MINUTES(?intermediateDepartureDateTime)) * 60 + SECONDS(?intermediateDepartureDateTime)  AS ?intermediateDepartureTS)
+  
+    # formatted textual representation of the flight	
+    BIND(CONCAT(STR( ?originCode ), " -> ", STR(?intermediateCode), " -> ", STR( ?destinationCode )) AS ?flightDescription ) .
+    
+    # this query will find flights with layovers
+    BIND("true"^^xsd:boolean AS ?hasLayovers) .
+    
+    # round-trip flights are excluded as that stop is not considered a layover
+    FILTER(?originCode != ?destinationCode) .
+    
+    # the layover flight should depart after the initial flight arrives
+    FILTER(?intermediateDepartureDateTime > ?intermediateArrivalDateTime) .
+    
+    # for two flights to be considered as a possible connection in 1 larger
+    # encompassing flight, a limit of maximally 20 hours between them has been
+    # specified (which was an arbitrary choice by us)
+    FILTER((?intermediateDepartureTS - ?intermediateArrivalTS) < (20 * 3600)) .
+    
+    # the layover airport's minimum connection time should allow both flights
+    # to be connected safely
+    FILTER((?mct * 60) < (?intermediateDepartureTS - ?intermediateArrivalTS)) .
+  }
+  
+  # a flight is continental if it has source and target airport in the same
+  # continent (independent of whether the intermediate airport is in another
+  # continent for simplicity sake), otherwise it is intercontinental
+  ?originAirport belonto:hasAddress ?originAddress .
+  ?destinationAirport belonto:hasAddress ?destinationAddress .
+  ?originAddress belonto:isLocatedInContinent ?originContinent .
+  ?destinationAddress belonto:isLocatedInContinent ?destinationContinent .
+  BIND(IF(?originContinent = ?destinationContinent, "continental"^^xsd:string, "intercontinental"^^xsd:string) AS ?flightType) .
+  
+  # only consider flights leaving from BRU
+  FILTER (?originCode = "BRU")
+  
+} ORDER BY ?flightType ?flightDescription

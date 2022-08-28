@@ -1,0 +1,1004 @@
+@prefix : <http://www.semanticweb.org/belonto#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xml: <http://www.w3.org/XML/1998/namespace> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@base <http://www.semanticweb.org/belonto> .
+
+<http://www.semanticweb.org/belonto> rdf:type owl:Ontology ;
+                                      rdfs:comment """BELONTO is an ontology created for use in an open information system that focuses on providing a ticket booking service for Brussels Airlines. BELONTO is an amalgamation of the code BEL used for Brussels Airlines by the International Civil Aviation Organization and the word \"ontology\".
+
+This ontology was created by Robin De Haes in the context of the course Open Information Systems at Vrije Universiteit Brussel (VUB)."""@en ;
+                                      rdfs:label "BELONTO"@en .
+
+#################################################################
+#    Object Properties
+#################################################################
+
+###  http://www.semanticweb.org/belonto#allowsParticipationInLoyaltyProgram
+:allowsParticipationInLoyaltyProgram rdf:type owl:ObjectProperty ,
+                                              owl:AsymmetricProperty ,
+                                              owl:IrreflexiveProperty ;
+                                     rdfs:domain :FrequentFlyerCard ;
+                                     rdfs:range :LoyaltyProgram ;
+                                     rdfs:comment "Specifies the loyalty program a frequent flyer card lets you participate in."@en ;
+                                     rdfs:label "allows participation in loyalty program"@en .
+
+
+###  http://www.semanticweb.org/belonto#arrivesAt
+:arrivesAt rdf:type owl:ObjectProperty ;
+           owl:inverseOf :hasArrival ;
+           rdf:type owl:AsymmetricProperty ,
+                    owl:IrreflexiveProperty ;
+           rdfs:domain :Flight ;
+           rdfs:range :Airport ;
+           rdfs:comment "Specifies the airport a flight will arrive at."@en ;
+           rdfs:label "arrives at"@en ;
+           rdfs:seeAlso :departsFrom .
+
+
+###  http://www.semanticweb.org/belonto#assignsSeatTo
+:assignsSeatTo rdf:type owl:ObjectProperty ;
+               owl:inverseOf :getsSeatVia ;
+               rdf:type owl:AsymmetricProperty ,
+                        owl:IrreflexiveProperty ;
+               rdfs:domain :SeatReservation ;
+               rdfs:range :Passenger ;
+               rdfs:comment "Specifies the passenger this reservation assigns a seat to."@en ;
+               rdfs:label "assigns seat to"@en .
+
+
+###  http://www.semanticweb.org/belonto#containsFlight
+:containsFlight rdf:type owl:ObjectProperty ;
+                owl:inverseOf :isBookedWith ;
+                rdf:type owl:AsymmetricProperty ,
+                         owl:IrreflexiveProperty ;
+                rdfs:domain :FlightBooking ;
+                rdfs:range :Flight ;
+                rdfs:comment "Specifies the flights that are part of a booking, i.e., each flight in the sequence of flights that have been booked."@en ;
+                rdfs:label "contains flight"@en .
+
+
+###  http://www.semanticweb.org/belonto#containsLuggageReservation
+:containsLuggageReservation rdf:type owl:ObjectProperty ,
+                                     owl:AsymmetricProperty ,
+                                     owl:IrreflexiveProperty ;
+                            rdfs:domain :FlightBooking ;
+                            rdfs:range :LuggageReservation ;
+                            rdfs:comment "Specifies the luggage reservation(s) a booking has."@en ;
+                            rdfs:label "contains luggage reservation"@en .
+
+
+###  http://www.semanticweb.org/belonto#containsSeat
+:containsSeat rdf:type owl:ObjectProperty ,
+                       owl:AsymmetricProperty ,
+                       owl:IrreflexiveProperty ;
+              rdfs:domain :Airplane ;
+              rdfs:range :Seat ;
+              rdfs:comment "Specifies the passenger seat(s) that are available in an airplane."@en ;
+              rdfs:label "contains seat"@en .
+
+
+###  http://www.semanticweb.org/belonto#containsSeatReservation
+:containsSeatReservation rdf:type owl:ObjectProperty ,
+                                  owl:AsymmetricProperty ,
+                                  owl:IrreflexiveProperty ;
+                         rdfs:domain :FlightBooking ;
+                         rdfs:range :SeatReservation ;
+                         rdfs:comment "Specifies the seat reservation(s) a booking has."@en ;
+                         rdfs:label "contains seat reservation"@en .
+
+
+###  http://www.semanticweb.org/belonto#departsFrom
+:departsFrom rdf:type owl:ObjectProperty ;
+             owl:inverseOf :hasDeparture ;
+             rdf:type owl:AsymmetricProperty ,
+                      owl:IrreflexiveProperty ;
+             rdfs:domain :Flight ;
+             rdfs:range :Airport ;
+             rdfs:comment "Specifies the airport a flight will depart from."@en ;
+             rdfs:label "departs from"@en ;
+             rdfs:seeAlso :arrivesAt .
+
+
+###  http://www.semanticweb.org/belonto#earnsFFPoints
+:earnsFFPoints rdf:type owl:ObjectProperty ,
+                        owl:AsymmetricProperty ,
+                        owl:IrreflexiveProperty ;
+               rdfs:domain :FlightBooking ;
+               rdfs:range :AwardedPoints ;
+               rdfs:comment "Specifies the points that were awarded by making a booking."@en ;
+               rdfs:label "earns points"@en .
+
+
+###  http://www.semanticweb.org/belonto#getsSeatVia
+:getsSeatVia rdf:type owl:ObjectProperty ,
+                      owl:AsymmetricProperty ,
+                      owl:IrreflexiveProperty ;
+             owl:inverseOf :assignsSeatTo ;
+             rdfs:domain :Passenger ;
+             rdfs:range :SeatReservation ;
+             rdfs:comment "Specifies the seat reservation through which a passenger got a seat assigned to him."@en ;
+             rdfs:label "gets seat via"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasAddress
+:hasAddress rdf:type owl:ObjectProperty ,
+                     owl:AsymmetricProperty ,
+                     owl:IrreflexiveProperty ;
+            rdfs:domain :Airport ;
+            rdfs:range :Address ;
+            rdfs:comment "Specifies the address an airport has."@en ;
+            rdfs:label "has address"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasArrival
+:hasArrival rdf:type owl:ObjectProperty ,
+                     owl:AsymmetricProperty ,
+                     owl:IrreflexiveProperty ;
+            owl:inverseOf :arrivesAt ;
+            rdfs:domain :Airport ;
+            rdfs:range :Flight ;
+            rdfs:comment "Specifies the flight(s) that arrive at an airport."@en ;
+            rdfs:label "has arrival"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasDeparture
+:hasDeparture rdf:type owl:ObjectProperty ,
+                       owl:AsymmetricProperty ,
+                       owl:IrreflexiveProperty ;
+              owl:inverseOf :departsFrom ;
+              rdfs:domain :Airport ;
+              rdfs:range :Flight ;
+              rdfs:comment "Specifies the flight(s) that depart from an airport."@en ;
+              rdfs:label "has departure"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasFlightBooking
+:hasFlightBooking rdf:type owl:ObjectProperty ;
+                  owl:inverseOf :isBookedFor ;
+                  rdf:type owl:AsymmetricProperty ,
+                           owl:IrreflexiveProperty ;
+                  rdfs:domain :Passenger ;
+                  rdfs:range :FlightBooking ;
+                  rdfs:comment "Specifies the booking(s) of flights a passenger has."@en ;
+                  rdfs:label "has booking"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasFrequentFlyerCard
+:hasFrequentFlyerCard rdf:type owl:ObjectProperty ,
+                               owl:AsymmetricProperty ,
+                               owl:IrreflexiveProperty ;
+                      rdfs:domain :Passenger ;
+                      rdfs:range :FrequentFlyerCard ;
+                      rdfs:comment "Specifies the frequent flyer card(s) a passenger has."@en ;
+                      rdfs:label "has frequent flyer card"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasLuggageReservation
+:hasLuggageReservation rdf:type owl:ObjectProperty ;
+                       owl:inverseOf :reservesLuggageFor ;
+                       rdf:type owl:AsymmetricProperty ,
+                                owl:IrreflexiveProperty ;
+                       rdfs:domain :Passenger ;
+                       rdfs:range :LuggageReservation ;
+                       rdfs:comment "Specifies the luggage reservation(s) a passenger has."@en ;
+                       rdfs:label "has luggage reservation"@en .
+
+
+# We could foresee extensions in which the return booking is part of the regular booking individual, 
+# which is why we chose not to make hasReturnBooking asymmetric nor irreflexive.
+
+###  http://www.semanticweb.org/belonto#hasReturnBooking
+:hasReturnBooking rdf:type owl:ObjectProperty ;
+                  rdfs:domain :FlightBooking ;
+                  rdfs:range :FlightBooking ;
+                  rdfs:comment "Specifies the return flight part of a booking."@en ;
+                  rdfs:label "has return booking"@en .
+
+
+###  http://www.semanticweb.org/belonto#isAddedToFFCard
+:isAddedToFFCard rdf:type owl:ObjectProperty ,
+                          owl:AsymmetricProperty ,
+                          owl:IrreflexiveProperty ;
+                 rdfs:domain :AwardedPoints ;
+                 rdfs:range :FrequentFlyerCard ;
+                 rdfs:comment "Specifies the frequent flyer card on which awarded points will be accumulated."@en ;
+                 rdfs:label "is added to frequent flyer card"@en .
+
+
+###  http://www.semanticweb.org/belonto#isBookedBy
+:isBookedBy rdf:type owl:ObjectProperty ;
+            owl:inverseOf :madeFlightBooking ;
+            rdf:type owl:AsymmetricProperty ,
+                     owl:IrreflexiveProperty ;
+            rdfs:domain :FlightBooking ;
+            rdfs:range :Passenger ;
+            rdfs:comment "Specifies which passenger made a booking."@en ;
+            rdfs:label "is booked by"@en .
+
+
+###  http://www.semanticweb.org/belonto#isBookedFor
+:isBookedFor rdf:type owl:ObjectProperty ,
+                      owl:AsymmetricProperty ,
+                      owl:IrreflexiveProperty ;
+             owl:inverseOf :hasFlightBooking ;
+             rdfs:domain :FlightBooking ;
+             rdfs:range :Passenger ;
+             rdfs:comment "Specifies the passenger(s) that are included in this booking, i.e., the passenger(s) for which a seat is booked on a flight."@en ;
+             rdfs:label "is booked for"@en .
+
+
+###  http://www.semanticweb.org/belonto#isBookedWith
+:isBookedWith rdf:type owl:ObjectProperty ,
+                       owl:AsymmetricProperty ,
+                       owl:IrreflexiveProperty ;
+              owl:inverseOf :containsFlight ;
+              rdfs:domain :Flight ;
+              rdfs:range :FlightBooking ;
+              rdfs:comment "Specifies the booking(s) that were made for a flight."@en ;
+              rdfs:label "is booked with"@en .
+
+
+###  http://www.semanticweb.org/belonto#isFlownWithPlane
+:isFlownWithPlane rdf:type owl:ObjectProperty ,
+                           owl:AsymmetricProperty ,
+                           owl:IrreflexiveProperty ;
+                  rdfs:domain :Flight ;
+                  rdfs:range :Airplane ;
+                  rdfs:comment "Specifies the airplane the flight is flown with."@en ;
+                  rdfs:label "is flown with plane"@en .
+
+
+###  http://www.semanticweb.org/belonto#isInsuredBy
+:isInsuredBy rdf:type owl:ObjectProperty ,
+                      owl:AsymmetricProperty ,
+                      owl:IrreflexiveProperty ;
+             rdfs:domain :FlightBooking ;
+             rdfs:range :InsuranceProduct ;
+             rdfs:comment "Specifies which travel insurance has been included in a booking to insure the booked flights."@en ;
+             rdfs:label "includes insurance"@en .
+
+
+###  http://www.semanticweb.org/belonto#isPaidWith
+:isPaidWith rdf:type owl:ObjectProperty ,
+                     owl:AsymmetricProperty ,
+                     owl:IrreflexiveProperty ;
+            rdfs:domain :FlightBooking ;
+            rdfs:range :PaymentOption ;
+            rdfs:comment "Specifies the payment option that was used to pay for a booking."@en ;
+            rdfs:label "is paid with"@en .
+
+
+###  http://www.semanticweb.org/belonto#madeFlightBooking
+:madeFlightBooking rdf:type owl:ObjectProperty ,
+                            owl:AsymmetricProperty ,
+                            owl:IrreflexiveProperty ;
+                   owl:inverseOf :isBookedBy ;
+                   rdfs:domain :Passenger ;
+                   rdfs:range :FlightBooking ;
+                   rdfs:comment "Specifies the flight(s) a passenger has booked."@en ;
+                   rdfs:label "booked"@en .
+
+
+###  http://www.semanticweb.org/belonto#offersAwardTicket
+:offersAwardTicket rdf:type owl:ObjectProperty ,
+                            owl:AsymmetricProperty ,
+                            owl:IrreflexiveProperty ;
+                   rdfs:domain :LoyaltyProgram ;
+                   rdfs:range :AwardTicket ;
+                   rdfs:comment "Specifies the award ticket(s) that are offered in a loyalty program."@en ;
+                   rdfs:label "offers award ticket"@en .
+
+
+###  http://www.semanticweb.org/belonto#offersMealService
+:offersMealService rdf:type owl:ObjectProperty ,
+                            owl:AsymmetricProperty ,
+                            owl:IrreflexiveProperty ;
+                   rdfs:domain :Flight ;
+                   rdfs:range :MealService ;
+                   rdfs:comment "Specifies the meal service(s) that are offered on a certain flight."@en ;
+                   rdfs:label "offers meal service"@en .
+
+
+###  http://www.semanticweb.org/belonto#reservesLuggageFor
+:reservesLuggageFor rdf:type owl:ObjectProperty ,
+                             owl:AsymmetricProperty ,
+                             owl:IrreflexiveProperty ;
+                    owl:inverseOf :hasLuggageReservation ;
+                    rdfs:domain :LuggageReservation ;
+                    rdfs:range :Passenger ;
+                    rdfs:comment "Specifies the passenger for which luggage is reserved."@en ;
+                    rdfs:label "reserves luggage for"@en .
+
+
+###  http://www.semanticweb.org/belonto#reservesLuggageService
+:reservesLuggageService rdf:type owl:ObjectProperty ,
+                                 owl:AsymmetricProperty ,
+                                 owl:IrreflexiveProperty ;
+                        rdfs:domain :LuggageReservation ;
+                        rdfs:range :LuggageService ;
+                        rdfs:comment "Specifies the luggage service a reservation is made for."@en ;
+                        rdfs:label "reserves luggage service"@en .
+
+
+###  http://www.semanticweb.org/belonto#reservesSeat
+:reservesSeat rdf:type owl:ObjectProperty ,
+                       owl:AsymmetricProperty ,
+                       owl:IrreflexiveProperty ;
+              rdfs:domain :SeatReservation ;
+              rdfs:range :Seat ;
+              rdfs:comment "Specifies the seat that is reserved by a seat reservation."@en ;
+              rdfs:label "reserves seat"@en .
+
+
+###  http://www.semanticweb.org/belonto#usedAwardFrom
+:usedAwardFrom rdf:type owl:ObjectProperty ,
+                        owl:AsymmetricProperty ,
+                        owl:IrreflexiveProperty ;
+               rdfs:domain :FlightBooking ;
+               rdfs:range :AwardTicket ;
+               rdfs:comment "Specifies the award ticket that was used to upgrade flights in this booking."@en ;
+               rdfs:label "used award from"@en .
+
+
+#################################################################
+#    Data properties
+#################################################################
+
+###  http://www.semanticweb.org/belonto#allowsMaxHeight
+:allowsMaxHeight rdf:type owl:DatatypeProperty ;
+                 rdfs:domain :LuggageService ;
+                 rdfs:range owl:real ;
+                 rdfs:comment """The maximum height that is allowed, e.g., the maximum height that is allowed for registered luggage.
+Its value is expected to be expressed in m."""@en ;
+                 rdfs:label "allows max height"@en .
+
+
+###  http://www.semanticweb.org/belonto#allowsMaxLength
+:allowsMaxLength rdf:type owl:DatatypeProperty ;
+                 rdfs:domain :LuggageService ;
+                 rdfs:range owl:real ;
+                 rdfs:comment """The maximum length that is allowed, e.g., the maximum length that is allowed for registered luggage.
+Its value is expected to be expressed in m."""@en ;
+                 rdfs:label "allows max length"@en .
+
+
+###  http://www.semanticweb.org/belonto#allowsMaxWeight
+:allowsMaxWeight rdf:type owl:DatatypeProperty ;
+                 rdfs:domain :LuggageService ;
+                 rdfs:range owl:real ;
+                 rdfs:comment """The maximum weight that is allowed, e.g., the maximum weight that is allowed for registered luggage.
+Its value is expected to be expressed in kg."""@en ;
+                 rdfs:label "allows max weight"@en .
+
+
+###  http://www.semanticweb.org/belonto#allowsMaxWidth
+:allowsMaxWidth rdf:type owl:DatatypeProperty ;
+                rdfs:domain :LuggageService ;
+                rdfs:range owl:real ;
+                rdfs:comment """The maximum width that is allowed, e.g., the maximum width that is allowed for registered luggage.
+Its value is expected to be expressed in m."""@en ;
+                rdfs:label "allows max width"@en .
+
+
+###  http://www.semanticweb.org/belonto#awardsUpgradeType
+:awardsUpgradeType rdf:type owl:DatatypeProperty ;
+                   rdfs:domain :AwardTicket ;
+                   rdfs:range xsd:string ;
+                   rdfs:comment "The type of upgrade that is awarded by a certain frequent flyer award ticket, e.g., a free upgrade from economy to business class on a flight."@en ;
+                   rdfs:label "awards upgrade type"@en .
+
+
+###  http://www.semanticweb.org/belonto#consistsOfFFPoints
+:consistsOfFFPoints rdf:type owl:DatatypeProperty ;
+                    rdfs:domain :AwardedPoints ;
+                    rdfs:range xsd:nonNegativeInteger ;
+                    rdfs:comment """The points related to the ternary relationship between FlightBooking and FrequentFlyerCard, specifying how many frequent flyer points are earned with a booking. 
+This ternary relationship is modeled as the class AwardedPoints which \"wraps\" this points property."""@en ;
+                    rdfs:label "consists of frequent flyer points"@en .
+
+
+###  http://www.semanticweb.org/belonto#costsFFPoints
+:costsFFPoints rdf:type owl:DatatypeProperty ;
+               rdfs:domain :AwardTicket ;
+               rdfs:range xsd:nonNegativeInteger ;
+               rdfs:comment "The number of points in a certain loyalty program it would cost to include the award of an award ticket in a booking."@en ;
+               rdfs:label "costs frequent flyer points"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasAccountNumber
+:hasAccountNumber rdf:type owl:DatatypeProperty ;
+                  rdfs:domain :PaymentOption ;
+                  rdfs:range xsd:string ;
+                  rdfs:comment "The account number from which a specific payment is made."@en ;
+                  rdfs:label "has account number"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasAccumulatedFFPoints
+:hasAccumulatedFFPoints rdf:type owl:DatatypeProperty ;
+                        rdfs:domain :FrequentFlyerCard ;
+                        rdfs:range xsd:nonNegativeInteger ;
+                        rdfs:comment "The number of points in a certain loyalty program that have been accumulated over time on a frequent flyer card."@en ;
+                        rdfs:label "has accumulated frequent flyer points"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasAircraftType
+:hasAircraftType rdf:type owl:DatatypeProperty ;
+                 rdfs:domain :Airplane ;
+                 rdfs:range xsd:string ;
+                 rdfs:comment "The kind of aircraft, e.g., Boeing 747."@en ;
+                 rdfs:label "has aircraft type"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasAirportName
+:hasAirportName rdf:type owl:DatatypeProperty ;
+                rdfs:domain :Airport ;
+                rdfs:range xsd:string ;
+                rdfs:comment "The name of an airport."@en ;
+                rdfs:label "has airport name"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasArrivalDateTime
+:hasArrivalDateTime rdf:type owl:DatatypeProperty ;
+                    rdfs:domain :Flight ;
+                    rdfs:range xsd:dateTime ;
+                    rdfs:comment "The date and time the airplane of a certain flight is estimated to arrive at its destination airport."@en ;
+                    rdfs:label "has arrival date and time"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasBirthDate
+:hasBirthDate rdf:type owl:DatatypeProperty ;
+              rdfs:domain :Passenger ;
+              rdfs:range xsd:dateTime ;
+              rdfs:comment "The date of birth of a passenger."@en ;
+              rdfs:label "has date of birth"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasBookingClass
+:hasBookingClass rdf:type owl:DatatypeProperty ;
+                 rdfs:domain :FlightBooking ;
+                 rdfs:range xsd:string ;
+                 rdfs:comment "The class of the seat that will be assigned for this booking, e.g., economy, business or first class."@en ;
+                 rdfs:label "has booking price class"@en ;
+                 rdfs:seeAlso :hasSeatClass .
+
+
+###  http://www.semanticweb.org/belonto#hasCityName
+:hasCityName rdf:type owl:DatatypeProperty ;
+             rdfs:domain :Address ;
+             rdfs:range xsd:string ;
+             rdfs:comment "The name of a city."@en ;
+             rdfs:label "has city name"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasCruisingSpeed
+:hasCruisingSpeed rdf:type owl:DatatypeProperty ;
+                  rdfs:domain :Airplane ;
+                  rdfs:range owl:real ;
+                  rdfs:comment """The speed at which an aircraft usually moves when traveling for a long distance.
+Its value is expected to be expressed in km/h."""@en ;
+                  rdfs:label "has cruising speed"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasDepartureDateTime
+:hasDepartureDateTime rdf:type owl:DatatypeProperty ;
+                      rdfs:domain :Flight ;
+                      rdfs:range xsd:dateTime ;
+                      rdfs:comment "The date and time the airplane of a certain flight is estimated to depart from its origin airport."@en ;
+                      rdfs:label "has departure date and time"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasEmail
+:hasEmail rdf:type owl:DatatypeProperty ;
+          rdfs:domain :Passenger ;
+          rdfs:range xsd:string ;
+          rdfs:comment "The email address of a passenger."@en ;
+          rdfs:label "has email"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasFirstName
+:hasFirstName rdf:type owl:DatatypeProperty ;
+              rdfs:domain :Passenger ;
+              rdfs:range xsd:string ;
+              rdfs:comment "The first name of a passenger."@en ;
+              rdfs:label "has first name"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasFlightDesignator
+:hasFlightDesignator rdf:type owl:DatatypeProperty ;
+                     rdfs:domain :Flight ;
+                     rdfs:range xsd:string ;
+                     rdfs:comment """The unique identifier designating a timetabled journey by an airplane.
+This is commonly called the fllight number, although technically the flight designator is a flight number prefixed by an airline IATA code."""@en ;
+                     rdfs:label "has flight designator"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasFlightDistance
+:hasFlightDistance rdf:type owl:DatatypeProperty ;
+                   rdfs:domain :Flight ;
+                   rdfs:range owl:real ;
+                   rdfs:comment "The distance that is estimated to be flown by an airplane during a flight."@en ;
+                   rdfs:label "has flight distance"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasFlightsPrice
+:hasFlightsPrice rdf:type owl:DatatypeProperty ;
+                 rdfs:domain :FlightBooking ;
+                 rdfs:range owl:real ;
+                 rdfs:comment """The price for a sequence of flights, excluding all additional options such as luggage services, meal services or seat reservations.
+Its value is expected to be expressed in euro.
+
+This property differs from a general \"price\" property as it does not indicate the price for the complete service, i.e., the flight booking, but only the price for the transportation of one passenger in the context of this booking. In other words, this property indicates the price for the transport of a single passenger from the origin airport at the start of the flights sequence to the destination airport at the end of the flights sequence."""@en ;
+                 rdfs:label "has price for passenger transport"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasFrequentFlyerNumber
+:hasFrequentFlyerNumber rdf:type owl:DatatypeProperty ;
+                        rdfs:domain :FrequentFlyerCard ;
+                        rdfs:range xsd:string ;
+                        rdfs:comment "A frequent flyer number or FFN is a number uniquely identifying a specific frequent flyer card allowing to monitor a passenger and the number of points he has accumulated over time."@en ;
+                        rdfs:label "has frequent flyer number"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasFuelCapacity
+:hasFuelCapacity rdf:type owl:DatatypeProperty ;
+                 rdfs:domain :Airplane ;
+                 rdfs:range owl:real ;
+                 rdfs:comment """The amount of fuel that an aircraft's fuel tank can hold.
+Its value is expected to be expressed in l."""@en ;
+                 rdfs:label "has fuel capacity"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasFuelEconomy
+:hasFuelEconomy rdf:type owl:DatatypeProperty ;
+                rdfs:domain :Airplane ;
+                rdfs:range owl:real ;
+                rdfs:comment """The distance an aircraft can travel using a specific amount of fuel.
+Its value is expected to be expressed in km/l."""@en ;
+                rdfs:label "has fuel economy"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasFuelType
+:hasFuelType rdf:type owl:DatatypeProperty ;
+             rdfs:domain :Airplane ;
+             rdfs:range xsd:string ;
+             rdfs:comment "The type of fuel, e.g., kerosene or gasoline."@en ;
+             rdfs:label "has fuel type"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasIATACode
+:hasIATACode rdf:type owl:DatatypeProperty ;
+             rdfs:domain :Airport ;
+             rdfs:range xsd:string ;
+             rdfs:comment """The International Air Transport Association (IATA) code is a uniqe identifier used to identify a specific airport. 
+It generally is a 3-letter code."""@en ;
+             rdfs:label "has IATA code"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasInsuranceName
+:hasInsuranceName rdf:type owl:DatatypeProperty ;
+                  rdfs:domain :InsuranceProduct ;
+                  rdfs:range xsd:string ;
+                  rdfs:comment "The name of an insurance product."@en ;
+                  rdfs:label "has insurance name"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasInsurancePremium
+:hasInsurancePremium rdf:type owl:DatatypeProperty ;
+                     rdfs:domain :InsuranceProduct ;
+                     rdfs:range owl:real ;
+                     rdfs:comment """The price of an insurance product.
+Its value is expected to be expressed in euro."""@en ;
+                     rdfs:label "has insurance premium"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasInsuranceType
+:hasInsuranceType rdf:type owl:DatatypeProperty ;
+                  rdfs:domain :InsuranceProduct ;
+                  rdfs:range xsd:string ;
+                  rdfs:comment "The type of insurance that is provided, e.g., trip cancellation insurance."@en ;
+                  rdfs:label "has insurance type"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasInsurer
+:hasInsurer rdf:type owl:DatatypeProperty ;
+            rdfs:domain :InsuranceProduct ;
+            rdfs:range owl:real ;
+            rdfs:comment "The insurance company's name."@en ;
+            rdfs:label "has insurer"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasLastName
+:hasLastName rdf:type owl:DatatypeProperty ;
+             rdfs:domain :Passenger ;
+             rdfs:range xsd:string ;
+             rdfs:comment "The last name of a passenger."@en ;
+             rdfs:label "has last name"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasLoyaltyProgramName
+:hasLoyaltyProgramName rdf:type owl:DatatypeProperty ;
+                       rdfs:domain :LoyaltyProgram ;
+                       rdfs:range xsd:string ;
+                       rdfs:comment "The name of the loyalty program."@en ;
+                       rdfs:label "has loyalty program name"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasLoyaltyProgramOrganizer
+:hasLoyaltyProgramOrganizer rdf:type owl:DatatypeProperty ;
+                            rdfs:domain :LoyaltyProgram ;
+                            rdfs:range xsd:string ;
+                            rdfs:comment "The company that organizes and manages a loyalty program."@en ;
+                            rdfs:label "has loyalty program organizer"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasLuggageType
+:hasLuggageType rdf:type owl:DatatypeProperty ;
+                rdfs:domain :LuggageService ;
+                rdfs:range xsd:string ;
+                rdfs:comment "The type of luggage that falls under a certain luggage service, e.g., carry-on luggage or heavy reserved bag."@en ;
+                rdfs:label "has luggage type"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasMCT
+:hasMCT rdf:type owl:DatatypeProperty ;
+        rdfs:domain :Airport ;
+        rdfs:range xsd:nonNegativeInteger ;
+        rdfs:comment """The minimum connection time or MCT is the shortest time interval required in order to transfer a passenger and his luggage from one flight to a connecting flight in a specific airport.
+Its value is expected to be expressed in minutes."""@en ;
+        rdfs:label "has minimum connection time"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasMealDescription
+:hasMealDescription rdf:type owl:DatatypeProperty ;
+                    rdfs:domain :MealService ;
+                    rdfs:range xsd:string ;
+                    rdfs:comment "A detailed description of the meal that will be provided."@en ;
+                    rdfs:label "has meal description"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasPassengerID
+:hasPassengerID rdf:type owl:DatatypeProperty ;
+                rdfs:domain :Passenger ;
+                rdfs:range xsd:string ;
+                rdfs:comment "An alphanumeric code serving as a unique identifier for a passenger."@en ;
+                rdfs:label "has passenger ID"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasPaymentType
+:hasPaymentType rdf:type owl:DatatypeProperty ;
+                rdfs:domain :PaymentOption ;
+                rdfs:range xsd:string ;
+                rdfs:comment "The type of payment, e.g., VISA, maestro, etc."@en ;
+                rdfs:label "is of payment type"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasPhoneNumber
+:hasPhoneNumber rdf:type owl:DatatypeProperty ;
+                rdfs:domain :Passenger ;
+                rdfs:range xsd:string ;
+                rdfs:comment "The telephone number of a passenger."@en ;
+                rdfs:label "has phone number"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasPostalCode
+:hasPostalCode rdf:type owl:DatatypeProperty ;
+               rdfs:domain :Address ;
+               rdfs:range xsd:string ;
+               rdfs:comment "The postal code associated with a city."@en ;
+               rdfs:label "has postal code"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasPricePerBag
+:hasPricePerBag rdf:type owl:DatatypeProperty ;
+                rdfs:domain :LuggageService ;
+                rdfs:range owl:real ;
+                rdfs:comment """The price for using a luggage service. This is the price for only one bag of the offered luggage type.
+Its value is expected to be expressed in euro."""@en ;
+                rdfs:label "has price per bag"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasPricePerMeal
+:hasPricePerMeal rdf:type owl:DatatypeProperty ;
+                 rdfs:domain :MealService ;
+                 rdfs:range owl:real ;
+                 rdfs:comment """The price for using a meal service. This is the price for one serving of the described meal.
+Its value is expected to be expressed in euro."""@en ;
+                 rdfs:label "has price per meal"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasReservationID
+:hasReservationID rdf:type owl:DatatypeProperty ;
+                  rdfs:domain :Reservation ;
+                  rdfs:range xsd:string ;
+                  rdfs:comment "An alphanumeric code serving as a unique identifier for a reservation."@en ;
+                  rdfs:label "has reservation ID"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasSeatClass
+:hasSeatClass rdf:type owl:DatatypeProperty ;
+              rdfs:domain :Seat ;
+              rdfs:range xsd:string ;
+              rdfs:comment "The price class of the seat, e.g., economy, business or first class."@en ;
+              rdfs:label "is seat of price class"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasSeatNumber
+:hasSeatNumber rdf:type owl:DatatypeProperty ;
+               rdfs:domain :Seat ;
+               rdfs:range xsd:string ;
+               rdfs:comment "An alphanumeric code specifying the location of a seat in an airplane."@en ;
+               rdfs:label "has seat number"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasSeatPrice
+:hasSeatPrice rdf:type owl:DatatypeProperty ;
+              rdfs:domain :SeatReservation ;
+              rdfs:range owl:real ;
+              rdfs:comment """The price for reserving the specified seat.
+Its value is expected to be expressed in euro."""@en ;
+              rdfs:label "has seat price"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasSeatType
+:hasSeatType rdf:type owl:DatatypeProperty ;
+             rdfs:domain :Seat ;
+             rdfs:range xsd:string ;
+             rdfs:comment """The type of seat.
+
+Seat type is used to specify other properties than price class, such as window seat, aisle seat, seat with extra legroom, etc."""@en ;
+             rdfs:label "has seat type"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasStreetName
+:hasStreetName rdf:type owl:DatatypeProperty ;
+               rdfs:domain :Address ;
+               rdfs:range xsd:string ;
+               rdfs:comment "The name of a street, e.g., Pleinlaan."@en ;
+               rdfs:label "has street name"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasStreetNumber
+:hasStreetNumber rdf:type owl:DatatypeProperty ;
+                 rdfs:domain :Address ;
+                 rdfs:range xsd:string ;
+                 rdfs:comment "The street number."@en ;
+                 rdfs:label "has street number"@en .
+
+
+###  http://www.semanticweb.org/belonto#hasTailNumber
+:hasTailNumber rdf:type owl:DatatypeProperty ;
+               rdfs:domain :Airplane ;
+               rdfs:range xsd:string ;
+               rdfs:comment "The tail number of a plane is an alphanumeric code used to identify a specific airplane."@en ;
+               rdfs:label "has tail number"@en .
+
+
+###  http://www.semanticweb.org/belonto#isDescribedInIPID
+:isDescribedInIPID rdf:type owl:DatatypeProperty ;
+                   rdfs:domain :InsuranceProduct ;
+                   rdfs:range xsd:string ;
+                   rdfs:comment "The Insurance Product Information Document or IPID url is a link to a document explicitly specifying all the terms, conditions and coverage that an insurance product provides."@en ;
+                   rdfs:label "is described in IPID"@en .
+
+
+###  http://www.semanticweb.org/belonto#isLocatedInContinent
+:isLocatedInContinent rdf:type owl:DatatypeProperty ;
+                      rdfs:domain :Address ;
+                      rdfs:range xsd:string ;
+                      rdfs:comment "The ISO code of a continent."@en ;
+                      rdfs:label "is located in continent"@en .
+
+
+###  http://www.semanticweb.org/belonto#isLocatedInCountry
+:isLocatedInCountry rdf:type owl:DatatypeProperty ;
+                    rdfs:domain :Address ;
+                    rdfs:range xsd:string ;
+                    rdfs:comment "The ISO code of a country."@en ;
+                    rdfs:label "is located in country"@en .
+
+
+###  http://www.semanticweb.org/belonto#isOfferedByInsurer
+:isOfferedByInsurer rdf:type owl:DatatypeProperty ;
+                    rdfs:domain :InsuranceProduct ;
+                    rdfs:range xsd:string ;
+                    rdfs:comment "The name of the insurance company providing the insurance product."@en ;
+                    rdfs:label "is offered by insurer"@en .
+
+
+###  http://www.semanticweb.org/belonto#isReservedOn
+:isReservedOn rdf:type owl:DatatypeProperty ;
+              rdfs:domain :Reservation ;
+              rdfs:range xsd:dateTime ;
+              rdfs:comment "The date and time at which the reservation was created."@en ;
+              rdfs:label "is reserved on"@en .
+
+
+###  http://www.semanticweb.org/belonto#offersMeal
+:offersMeal rdf:type owl:DatatypeProperty ;
+            rdfs:domain :MealService ;
+            rdfs:range xsd:string ;
+            rdfs:label "The name of the meal that is provided."@en ,
+                       "offers meal"@en .
+
+
+###  http://www.semanticweb.org/belonto#offersMealType
+:offersMealType rdf:type owl:DatatypeProperty ;
+                rdfs:domain :MealService ;
+                rdfs:range xsd:string ;
+                rdfs:comment "The type of meal, e.g., vegan."@en ;
+                rdfs:label "offers type of meal"@en .
+
+
+###  http://www.semanticweb.org/belonto#reservesNumberOfBags
+:reservesNumberOfBags rdf:type owl:DatatypeProperty ;
+                      rdfs:domain :LuggageReservation ;
+                      rdfs:range xsd:nonNegativeInteger ;
+                      rdfs:comment "The number of bags a luggage reservation is for."@en ;
+                      rdfs:label "reserves a number of bags"@en .
+
+
+#################################################################
+#    Classes
+#################################################################
+
+###  http://www.semanticweb.org/belonto#Address
+:Address rdf:type owl:Class ;
+         rdfs:comment """The address of an airport.
+
+This entity could also be used more generally to specify the address of any person or organization."""@en ;
+         rdfs:label "Address"@en .
+
+
+###  http://www.semanticweb.org/belonto#Airplane
+:Airplane rdf:type owl:Class ;
+          rdfs:comment "An airplane is a flying vehicle that can be used to transport people."@en ;
+          rdfs:label "Airplane"@en .
+
+
+###  http://www.semanticweb.org/belonto#Airport
+:Airport rdf:type owl:Class ;
+         rdfs:comment "A complex of runways and buildings for the take-off, landing, and maintenance of airplanes, with facilities for passengers."@en ;
+         rdfs:label "Airport"@en .
+
+
+###  http://www.semanticweb.org/belonto#AwardTicket
+:AwardTicket rdf:type owl:Class ;
+             rdfs:comment "A ticket giving you access to an award, e.g., a free upgrade to business class, that you can obtain in exchange for a specified amount of frequent flyer points that you have previously earned as part of a loyalty program."@en ;
+             rdfs:label "Award Ticket"@en ;
+             rdfs:seeAlso :LoyaltyProgram .
+
+
+###  http://www.semanticweb.org/belonto#AwardedPoints
+:AwardedPoints rdf:type owl:Class ;
+               rdfs:comment "The points that have been awarded to a frequent flyer card by a booking that was made."@en ;
+               rdfs:label "Awarded Points"@en ;
+               rdfs:seeAlso :FlightBooking ,
+                            :FrequentFlyerCard .
+
+
+###  http://www.semanticweb.org/belonto#Flight
+:Flight rdf:type owl:Class ;
+        rdfs:comment """A journey via airplane, organized by an airline, to fly passengers from one airport to another.
+
+This type of flight starts as soon as the plane leaves its origin airport and ends once it arrives at another airport. A \"flight\" with layovers is therefore seen as a sequence of connected flights and not as a single flight. Such a sequence of flights is connected via a booking."""@en ;
+        rdfs:label "Flight"@en ;
+        rdfs:seeAlso :FlightBooking .
+
+
+###  http://www.semanticweb.org/belonto#FlightBooking
+:FlightBooking rdf:type owl:Class ;
+               rdfs:subClassOf :Reservation ;
+               rdfs:comment "A reservation for a round-trip or direct flight (with potential layovers) for a passenger or group of passengers."@en ;
+               rdfs:label "Flight Booking"@en .
+
+
+###  http://www.semanticweb.org/belonto#FrequentFlyerCard
+:FrequentFlyerCard rdf:type owl:Class ;
+                   rdfs:comment "A card provided to an airline passenger to provide membership in a loyalty program or frequent-flyer program."@en ;
+                   rdfs:label "Frequent Flyer Card"@en ;
+                   rdfs:seeAlso :LoyaltyProgram .
+
+
+###  http://www.semanticweb.org/belonto#InsuranceProduct
+:InsuranceProduct rdf:type owl:Class ;
+                  rdfs:comment """A product provided by an insurance company to protect against a possible eventuality in return for a payment.
+
+In the context of airline travel, this is mostly used as travel insurance protecting against flight cancellations or curtailments."""@en ;
+                  rdfs:label "Insurance"@en .
+
+
+###  http://www.semanticweb.org/belonto#LoyaltyProgram
+:LoyaltyProgram rdf:type owl:Class ;
+                rdfs:comment """A plan or system under which members can earn rewards for being regular, loyal customers. 
+
+In the context of airline travel, such a loyalty program is generally a frequent-flyer program in which passengers that frequently use that airline are rewarded points."""@en ;
+                rdfs:label "Loyalty Program"@en .
+
+
+###  http://www.semanticweb.org/belonto#LuggageReservation
+:LuggageReservation rdf:type owl:Class ;
+                    rdfs:subClassOf :Reservation ;
+                    rdfs:comment """A reservation of space on an airplane so a passenger is able to transport luggage on a flight with him or her.
+This type of reservation is done in the context of a flight booking."""@en ;
+                    rdfs:label "Luggage Reservation"@en ;
+                    rdfs:seeAlso :FlightBooking ,
+                                 :LuggageService .
+
+
+###  http://www.semanticweb.org/belonto#LuggageService
+:LuggageService rdf:type owl:Class ;
+                rdfs:comment "A service provided by an airline to register a certain type of luggage to be transported with a passenger to its destination."@en ;
+                rdfs:label "Luggage Service"@en .
+
+
+###  http://www.semanticweb.org/belonto#MealService
+:MealService rdf:type owl:Class ;
+             rdfs:comment "A meal that is available for purchase or is provided on a flight as a service to the passengers."@en ;
+             rdfs:label "Meal Service"@en .
+
+
+###  http://www.semanticweb.org/belonto#Passenger
+:Passenger rdf:type owl:Class ;
+           rdfs:comment "A passenger on a flight."@en ;
+           rdfs:label "Passenger"@en .
+
+
+###  http://www.semanticweb.org/belonto#PaymentOption
+:PaymentOption rdf:type owl:Class ;
+               rdfs:comment "The option of payment chosen by a passenger."@en ;
+               rdfs:label "Payment Option"@en .
+
+
+###  http://www.semanticweb.org/belonto#Reservation
+:Reservation rdf:type owl:Class ;
+             rdfs:comment """The reservation of a specific service or product.
+
+This is not used to provide information about the specific service or product that is reserved, but rather to provide information about the actual reservation itself."""@en ;
+             rdfs:label "Reservation"@en .
+
+
+###  http://www.semanticweb.org/belonto#Seat
+:Seat rdf:type owl:Class ;
+      rdfs:comment "A passenger seat in an airplane, which can be reserved for a flight."@en ;
+      rdfs:label "Seat"@en .
+
+
+###  http://www.semanticweb.org/belonto#SeatReservation
+:SeatReservation rdf:type owl:Class ;
+                 rdfs:subClassOf :Reservation ;
+                 rdfs:comment """A reservation of a specific seat on a flight.
+This type of reservation is done in the context of a flight booking."""@en ;
+                 rdfs:label "Seat Reservation"@en ;
+                 rdfs:seeAlso :FlightBooking ,
+                              :Seat .
+
+
+#################################################################
+#    General axioms
+#################################################################
+
+# It seems impossible for an individual to belong to more than one of the specified classes. 
+# However, we could foresee extensions in which a FlightBooking, LuggageReservation and SeatReservation are all summarized in a single individual.
+# Therefore, the subclasses of Reservation have not been explicitly stated to be disjoint.
+
+[ rdf:type owl:AllDisjointClasses ;
+  owl:members ( :Address
+                :Airplane
+                :Airport
+                :AwardTicket
+                :AwardedPoints
+                :Flight
+                :FrequentFlyerCard
+                :InsuranceProduct
+                :LoyaltyProgram
+                :LuggageService
+                :MealService
+                :Passenger
+                :PaymentOption
+                :Reservation
+                :Seat
+              )
+] .
